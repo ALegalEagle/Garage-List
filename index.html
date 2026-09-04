@@ -67,6 +67,7 @@
       transition: background 0.15s ease, color 0.15s ease; 
       user-select: none;
       min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
     }
 
     .container { 
@@ -136,12 +137,11 @@
     .sel-btn-exit { background: var(--pill-bg); border: 1px solid var(--border); padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 700; cursor: pointer; color: var(--text); }
 
     .bento-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
-    .stat-card { border-radius: 16px; padding: 14px 16px; border-width: 2px; border-style: solid; min-height: 80px; display: flex; flex-direction: column; justify-content: space-between; cursor: pointer; transition: transform 0.1s ease, box-shadow 0.15s ease; }
+    .stat-card { border-radius: 16px; padding: 14px 16px; border-width: 2px; border-style: solid; min-height: 80px; display: flex; flex-direction: column; justify-content: space-between; cursor: pointer; transition: transform 0.1s ease, box-shadow 0.15s ease; will-change: transform; }
     .stat-card:active { transform: scale(0.97); }
     
     .stat-card.out { background: var(--out-bg); border-color: var(--out-border); }
     .stat-card.low { background: var(--low-bg); border-color: var(--low-border); }
-    
     .stat-card.active-filter-card { box-shadow: 0 0 0 3px var(--fab-bg); }
 
     .stat-label { font-size: 10px; font-weight: 800; letter-spacing: 0.6px; }
@@ -151,10 +151,10 @@
 
     .filters { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 14px; scrollbar-width: none; }
     .filters::-webkit-scrollbar { display: none; }
-    .chip { padding: 6px 14px; border-radius: 16px; font-size: 12px; font-weight: 700; border: 1px solid var(--border); background: var(--card-bg); color: var(--text-muted); cursor: pointer; white-space: nowrap; transition: background 0.15s ease; }
+    .chip { padding: 6px 14px; border-radius: 16px; font-size: 12px; font-weight: 700; border: 1px solid var(--border); background: var(--card-bg); color: var(--text-muted); cursor: pointer; white-space: nowrap; transition: background 0.15s ease, color 0.15s ease; }
     .chip.active { background: var(--fab-bg); color: var(--fab-text); border-color: var(--fab-bg); }
 
-    .bento-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .bento-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; contain: content; }
     .bento-card { 
       background: var(--card-bg); 
       border-radius: 16px; 
@@ -165,10 +165,11 @@
       justify-content: space-between; 
       min-height: 124px; 
       position: relative; 
-      animation: cardSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      animation: cardSlideIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      will-change: transform, opacity;
     }
     @keyframes cardSlideIn {
-      0% { opacity: 0; transform: translateY(16px) scale(0.96); }
+      0% { opacity: 0; transform: translateY(10px) scale(0.98); }
       100% { opacity: 1; transform: translateY(0) scale(1); }
     }
 
@@ -256,7 +257,7 @@
       box-shadow: 0 -10px 40px rgba(0,0,0,0.3);
       max-height: 90vh;
       overflow-y: auto;
-      animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      animation: slideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1);
     }
     @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
@@ -271,7 +272,7 @@
     .input-field { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 14px; font-size: 15px; background: var(--bg); color: var(--text); outline: none; }
 
     .modal-cat-grid { display: flex; flex-wrap: wrap; gap: 8px; }
-    .modal-cat-pill { padding: 8px 14px; border-radius: 14px; font-size: 13px; font-weight: 700; border: 1px solid var(--border); background: var(--bg); color: var(--text-muted); cursor: pointer; transition: all 0.15s ease; }
+    .modal-cat-pill { padding: 8px 14px; border-radius: 14px; font-size: 13px; font-weight: 700; border: 1px solid var(--border); background: var(--bg); color: var(--text-muted); cursor: pointer; transition: background 0.15s ease, color 0.15s ease; }
     .modal-cat-pill.active { background: var(--fab-bg); color: var(--fab-text); border-color: var(--fab-bg); }
     .modal-cat-pill.new-pill { border-style: dashed; color: var(--text); }
 
@@ -290,7 +291,7 @@
 
     .confirm-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
     .confirm-overlay.open { display: flex; }
-    .confirm-box { background: var(--card-bg); width: 100%; max-width: 360px; border-radius: 24px; padding: 24px 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); text-align: center; animation: popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
+    .confirm-box { background: var(--card-bg); width: 100%; max-width: 360px; border-radius: 24px; padding: 24px 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); text-align: center; animation: popIn 0.18s cubic-bezier(0.16, 1, 0.3, 1); }
     @keyframes popIn { from { transform: scale(0.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     .confirm-icon { font-size: 32px; margin-bottom: 12px; }
     .confirm-title { font-size: 18px; font-weight: 800; margin-bottom: 8px; }
@@ -430,10 +431,10 @@
       writeBatch, 
       increment, 
       serverTimestamp,
-      enableIndexedDbPersistence
+      enableMultiTabIndexedDbPersistence
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    const APP_VERSION = "3.9.0";
+    const APP_VERSION = "4.0.0";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAMznXG0OXHqMdfrmOGHK-g08TugsYfWw8",
@@ -447,7 +448,8 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    enableIndexedDbPersistence(db).catch((err) => {
+    // Multi-tab safe indexedDb offline caching
+    enableMultiTabIndexedDbPersistence(db).catch((err) => {
       console.warn("Persistence notice:", err.code);
     });
 
@@ -479,6 +481,7 @@
 
     const defaultCategories = ["Cereal", "Gluten Free Cereal", "Cleaning", "Household", "Condiments", "Spreads", "Kitchenware"];
 
+    // App State
     let items = [];
     let categories = defaultCategories;
     let currentFilter = "All";
@@ -489,15 +492,50 @@
     let modalInitialQty = 1;
     let pendingDeleteCategory = null;
 
+    // Cache DOM Elements to eliminate querySelector thrashing
+    const dom = {
+      body: document.body,
+      grid: document.getElementById('bentoGrid'),
+      filterBar: document.getElementById('categoryFilters'),
+      selBar: document.getElementById('selectionBar'),
+      selCount: document.getElementById('selectionCount'),
+      bulkDeleteBar: document.getElementById('bulkDeleteBar'),
+      statCardOut: document.getElementById('statCardOut'),
+      statCardLow: document.getElementById('statCardLow'),
+      outCount: document.getElementById('outCount'),
+      lowCount: document.getElementById('lowCount'),
+      summaryText: document.getElementById('summaryText'),
+      syncStatus: document.getElementById('syncStatus'),
+      syncText: document.getElementById('syncText'),
+      bellBtn: document.getElementById('bellBtn'),
+      binBtn: document.getElementById('binBtn'),
+      btnLight: document.getElementById('btnLight'),
+      btnDark: document.getElementById('btnDark'),
+      addModalOverlay: document.getElementById('addModalOverlay'),
+      modalCatGrid: document.getElementById('modalCatGrid'),
+      inlineNewCategory: document.getElementById('inlineNewCategory'),
+      modalQtyVal: document.getElementById('modalQtyVal'),
+      newItemName: document.getElementById('newItemName'),
+      categoryModalOverlay: document.getElementById('categoryModalOverlay'),
+      categoryManageList: document.getElementById('categoryManageList'),
+      newCatInput: document.getElementById('newCatInput'),
+      bulkDeleteOverlay: document.getElementById('bulkDeleteOverlay'),
+      bulkDeleteTitle: document.getElementById('bulkDeleteTitle'),
+      confirmBulkDeleteBtn: document.getElementById('confirmBulkDeleteBtn'),
+      bulkListPreview: document.getElementById('bulkListPreview'),
+      catDeleteDialogOverlay: document.getElementById('catDeleteDialogOverlay'),
+      catDeleteDialogDesc: document.getElementById('catDeleteDialogDesc')
+    };
+
     window.setTheme = function(mode) {
       if (mode === 'dark') {
-        document.body.classList.add('dark');
-        document.getElementById('btnDark').classList.add('active');
-        document.getElementById('btnLight').classList.remove('active');
+        dom.body.classList.add('dark');
+        dom.btnDark.classList.add('active');
+        dom.btnLight.classList.remove('active');
       } else {
-        document.body.classList.remove('dark');
-        document.getElementById('btnLight').classList.add('active');
-        document.getElementById('btnDark').classList.remove('active');
+        dom.body.classList.remove('dark');
+        dom.btnLight.classList.add('active');
+        dom.btnDark.classList.remove('active');
       }
       localStorage.setItem('garage_theme', mode);
     };
@@ -505,12 +543,11 @@
     window.setTheme(savedTheme);
 
     function updateBellVisibility() {
-      const bell = document.getElementById('bellBtn');
       if ('Notification' in window && Notification.permission === 'granted') {
-        if (bell) bell.classList.add('hidden');
-        document.body.classList.add('notifications-active');
+        dom.bellBtn.classList.add('hidden');
+        dom.body.classList.add('notifications-active');
       } else {
-        document.body.classList.remove('notifications-active');
+        dom.body.classList.remove('notifications-active');
       }
     }
 
@@ -522,27 +559,27 @@
       return rawInput.trim().replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
     }
 
+    function escapeAttr(str) {
+      return (str || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    }
+
     function initRealtimeDatabase() {
+      // 1. Sync Categories Metadata
       onSnapshot(metaDoc, (snap) => {
-        let loadedCats = defaultCategories;
         if (snap.exists() && Array.isArray(snap.data().list)) {
           const uniqueSet = new Set();
           snap.data().list.forEach(c => {
-            if (c && typeof c === 'string') {
-              const norm = sanitizeCategoryName(c);
-              uniqueSet.add(norm);
-            }
+            if (c && typeof c === 'string') uniqueSet.add(sanitizeCategoryName(c));
           });
-          loadedCats = Array.from(uniqueSet);
+          categories = Array.from(uniqueSet);
         } else {
-          setDoc(metaDoc, { list: defaultCategories });
+          categories = defaultCategories;
+          setDoc(metaDoc, { list: defaultCategories }).catch(console.error);
         }
-        categories = loadedCats;
         render();
-      }, (err) => {
-        console.error("Categories snapshot error:", err);
-      });
+      }, (err) => console.error("Categories snapshot error:", err));
 
+      // 2. Sync Inventory
       onSnapshot(itemsCol, (snapshot) => {
         if (snapshot.empty && !localStorage.getItem('garage_seeded_fb')) {
           seedDatabase();
@@ -552,12 +589,16 @@
         const loaded = [];
         snapshot.forEach((d) => {
           const data = d.data();
-          const normalizedCat = sanitizeCategoryName(data.category);
-          loaded.push({ id: d.id, ...data, category: normalizedCat });
+          loaded.push({ 
+            id: d.id, 
+            ...data, 
+            category: sanitizeCategoryName(data.category)
+          });
         });
 
         loaded.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
+        // Notification trigger on depletion
         loaded.forEach((newItem) => {
           const oldItem = items.find((i) => i.id === newItem.id);
           if (oldItem && oldItem.amount > 0 && newItem.amount === 0) {
@@ -566,19 +607,6 @@
         });
 
         items = loaded;
-
-        // Auto-adopt any category currently present on items into categories list
-        let catsChanged = false;
-        items.forEach(itm => {
-          if (itm.category && !categories.includes(itm.category)) {
-            categories.push(itm.category);
-            catsChanged = true;
-          }
-        });
-        if (catsChanged) {
-          setDoc(metaDoc, { list: categories });
-        }
-
         render();
         updateSyncStatus(true);
       }, (err) => {
@@ -599,77 +627,79 @@
           updatedAt: serverTimestamp()
         });
       });
-      await batch.commit();
+      await batch.commit().catch(console.error);
     }
 
     function updateSyncStatus(isLive) {
-      const statusPill = document.getElementById('syncStatus');
-      const text = document.getElementById('syncText');
       if (isLive && navigator.onLine) {
-        statusPill.classList.remove('offline');
-        text.innerText = "Live";
+        dom.syncStatus.classList.remove('offline');
+        dom.syncText.innerText = "Live";
       } else {
-        statusPill.classList.add('offline');
-        text.innerText = "Offline";
+        dom.syncStatus.classList.add('offline');
+        dom.syncText.innerText = "Offline";
       }
     }
 
-    window.addEventListener('online', () => updateSyncStatus(true));
-    window.addEventListener('offline', () => updateSyncStatus(false));
+    window.addEventListener('online', () => updateSyncStatus(true), { passive: true });
+    window.addEventListener('offline', () => updateSyncStatus(false), { passive: true });
 
     window.updateStock = async function(id, delta, event) {
       if (event) event.stopPropagation();
       if (selectionMode) return;
 
       const item = items.find((i) => i.id === id);
-      if (!item) return;
-      if (item.amount <= 0 && delta < 0) return;
+      if (!item || (item.amount <= 0 && delta < 0)) return;
+
+      // Optimistic visual update
+      item.amount += delta;
+      render();
 
       const itemRef = doc(db, "garage_items", id);
       await updateDoc(itemRef, {
         amount: increment(delta),
         updatedAt: serverTimestamp()
-      }).catch((err) => console.error("Update failed:", err));
+      }).catch((err) => {
+        console.error("Update failed:", err);
+        item.amount -= delta; // Rollback on drop
+        render();
+      });
     };
 
     window.adjustModalQty = function(delta) {
       modalInitialQty = Math.max(0, modalInitialQty + delta);
-      document.getElementById('modalQtyVal').innerText = modalInitialQty;
+      dom.modalQtyVal.innerText = modalInitialQty;
     };
 
     window.handleNewCategoryKeydown = function(event) {
       if (event.key === 'Enter') {
         event.preventDefault();
-        const inlineInput = document.getElementById('inlineNewCategory');
-        const val = inlineInput.value.trim();
+        const val = dom.inlineNewCategory.value.trim();
         if (!val) return;
 
         const resolvedCategory = sanitizeCategoryName(val);
         if (!categories.includes(resolvedCategory)) {
           categories.push(resolvedCategory);
-          setDoc(metaDoc, { list: categories });
+          setDoc(metaDoc, { list: categories }).catch(console.error);
         }
 
         selectedModalCategory = resolvedCategory;
-        inlineInput.value = '';
-        inlineInput.style.display = 'none';
+        dom.inlineNewCategory.value = '';
+        dom.inlineNewCategory.style.display = 'none';
         renderModalCategoryPills();
       }
     };
 
     window.addNewItem = async function() {
-      const nameInput = document.getElementById('newItemName');
-      const name = nameInput.value.trim();
+      const name = dom.newItemName.value.trim();
       let category = selectedModalCategory;
-      const inlineInput = document.getElementById('inlineNewCategory');
       
       if (category === '__new__') {
-        const val = inlineInput.value.trim();
+        const val = dom.inlineNewCategory.value.trim();
         if (!val) return alert('Please enter a category name');
         category = sanitizeCategoryName(val);
         if (!categories.includes(category)) {
           categories.push(category);
-          setDoc(metaDoc, { list: categories });
+          setDoc(metaDoc, { list: categories }).catch(console.error);
         }
       } else {
         category = sanitizeCategoryName(category);
@@ -683,69 +713,59 @@
         category,
         amount: modalInitialQty,
         updatedAt: serverTimestamp()
-      });
+      }).catch(console.error);
 
-      nameInput.value = '';
-      inlineInput.value = '';
-      inlineInput.style.display = 'none';
+      dom.newItemName.value = '';
+      dom.inlineNewCategory.value = '';
+      dom.inlineNewCategory.style.display = 'none';
       toggleAddModal(false);
     };
 
-    function escapeAttr(str) {
-      return (str || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-    }
-
     function renderModalCategoryPills() {
-      const grid = document.getElementById('modalCatGrid');
       if (!selectedModalCategory && categories.length > 0) {
         selectedModalCategory = categories[0];
       }
 
-      grid.innerHTML = categories.map((c) => {
+      let html = categories.map((c) => {
         const esc = escapeAttr(c);
         return `<div class="modal-cat-pill ${selectedModalCategory === c ? 'active' : ''}" onclick="selectModalCategory('${esc}')">${c}</div>`;
-      }).join('') + `<div class="modal-cat-pill new-pill ${selectedModalCategory === '__new__' ? 'active' : ''}" onclick="selectModalCategory('__new__')">+ New Category...</div>`;
+      }).join('');
+
+      html += `<div class="modal-cat-pill new-pill ${selectedModalCategory === '__new__' ? 'active' : ''}" onclick="selectModalCategory('__new__')">+ New Category...</div>`;
+      dom.modalCatGrid.innerHTML = html;
     }
 
     window.selectModalCategory = function(cat) {
       selectedModalCategory = cat;
-      const inlineInput = document.getElementById('inlineNewCategory');
-      if (cat === '__new__') {
-        inlineInput.style.display = 'block';
-        inlineInput.focus();
-      } else {
-        inlineInput.style.display = 'none';
-      }
+      dom.inlineNewCategory.style.display = cat === '__new__' ? 'block' : 'none';
+      if (cat === '__new__') dom.inlineNewCategory.focus();
       renderModalCategoryPills();
     };
 
     window.toggleAddModal = function(open) {
-      const overlay = document.getElementById('addModalOverlay');
       if (open) {
         modalInitialQty = 1;
-        document.getElementById('modalQtyVal').innerText = modalInitialQty;
+        dom.modalQtyVal.innerText = modalInitialQty;
         if (categories.length > 0) selectedModalCategory = categories[0];
         renderModalCategoryPills();
-        overlay.classList.add('open');
-        setTimeout(() => document.getElementById('newItemName').focus(), 100);
+        dom.addModalOverlay.classList.add('open');
+        setTimeout(() => dom.newItemName.focus(), 120);
       } else {
-        overlay.classList.remove('open');
+        dom.addModalOverlay.classList.remove('open');
       }
     };
 
     window.toggleCategoryModal = function(open) {
-      const overlay = document.getElementById('categoryModalOverlay');
       if (open) {
         renderCategoryManageList();
-        overlay.classList.add('open');
+        dom.categoryModalOverlay.classList.add('open');
       } else {
-        overlay.classList.remove('open');
+        dom.categoryModalOverlay.classList.remove('open');
       }
     };
 
     function renderCategoryManageList() {
-      const listEl = document.getElementById('categoryManageList');
-      listEl.innerHTML = categories.map((cat) => {
+      dom.categoryManageList.innerHTML = categories.map((cat) => {
         const count = items.filter((i) => i.category === cat).length;
         const esc = escapeAttr(cat);
         return `
@@ -761,14 +781,13 @@
     }
 
     window.addNewCategoryFromModal = function() {
-      const input = document.getElementById('newCatInput');
-      const val = input.value.trim();
+      const val = dom.newCatInput.value.trim();
       if (!val) return;
       const resolved = sanitizeCategoryName(val);
       if (!categories.includes(resolved)) {
         categories.push(resolved);
-        setDoc(metaDoc, { list: categories });
-        input.value = '';
+        setDoc(metaDoc, { list: categories }).catch(console.error);
+        dom.newCatInput.value = '';
         renderCategoryManageList();
         render();
       }
@@ -777,18 +796,15 @@
     window.openCategoryDeleteDialog = function(cat) {
       pendingDeleteCategory = cat;
       const count = items.filter((i) => i.category === cat).length;
-      const descEl = document.getElementById('catDeleteDialogDesc');
-      if (count > 0) {
-        descEl.innerHTML = `Deleting <b>"${cat}"</b> will automatically move <b>${count} items</b> to <b>"General"</b>.`;
-      } else {
-        descEl.innerHTML = `Are you sure you want to delete the <b>"${cat}"</b> category?`;
-      }
-      document.getElementById('catDeleteDialogOverlay').classList.add('open');
+      dom.catDeleteDialogDesc.innerHTML = count > 0 
+        ? `Deleting <b>"${cat}"</b> will automatically move <b>${count} items</b> to <b>"General"</b>.`
+        : `Are you sure you want to delete the <b>"${cat}"</b> category?`;
+      dom.catDeleteDialogOverlay.classList.add('open');
     };
 
     window.closeCategoryDeleteDialog = function() {
       pendingDeleteCategory = null;
-      document.getElementById('catDeleteDialogOverlay').classList.remove('open');
+      dom.catDeleteDialogOverlay.classList.remove('open');
     };
 
     window.executeCategoryDelete = async function() {
@@ -801,12 +817,12 @@
         items.filter((i) => i.category === cat).forEach((i) => {
           batch.update(doc(db, "garage_items", i.id), { category: "General" });
         });
-        await batch.commit();
+        await batch.commit().catch(console.error);
       }
 
       categories = categories.filter((c) => c !== cat);
       if (currentFilter === cat) currentFilter = "All";
-      await setDoc(metaDoc, { list: categories });
+      await setDoc(metaDoc, { list: categories }).catch(console.error);
 
       closeCategoryDeleteDialog();
       renderCategoryManageList();
@@ -814,32 +830,26 @@
     };
 
     window.toggleSelectionMode = function() {
-      if (selectionMode) exitSelectionMode();
-      else enterSelectionMode();
-    };
-
-    function enterSelectionMode() {
-      selectionMode = true;
+      selectionMode = !selectionMode;
       selectedIds.clear();
-      document.body.classList.add('selection-active');
-      document.getElementById('binBtn').classList.add('active-bin');
+      dom.body.classList.toggle('selection-active', selectionMode);
+      dom.binBtn.classList.toggle('active-bin', selectionMode);
       render();
-    }
+    };
 
     window.exitSelectionMode = function() {
       selectionMode = false;
       selectedIds.clear();
-      document.body.classList.remove('selection-active');
-      document.getElementById('binBtn').classList.remove('active-bin');
+      dom.body.classList.remove('selection-active');
+      dom.binBtn.classList.remove('active-bin');
       render();
     };
 
     window.handleCardClick = function(id) {
-      if (selectionMode) {
-        if (selectedIds.has(id)) selectedIds.delete(id);
-        else selectedIds.add(id);
-        render();
-      }
+      if (!selectionMode) return;
+      if (selectedIds.has(id)) selectedIds.delete(id);
+      else selectedIds.add(id);
+      render();
     };
 
     window.toggleSelectAll = function() {
@@ -851,20 +861,19 @@
     window.openBulkDeleteSheet = function() {
       if (selectedIds.size === 0) return alert("Tap to select at least one item to delete.");
       const count = selectedIds.size;
-      document.getElementById('bulkDeleteTitle').innerText = `Delete ${count} Selected ${count === 1 ? 'Item' : 'Items'}?`;
-      document.getElementById('confirmBulkDeleteBtn').innerText = `Confirm Delete (${count})`;
+      dom.bulkDeleteTitle.innerText = `Delete ${count} Selected ${count === 1 ? 'Item' : 'Items'}?`;
+      dom.confirmBulkDeleteBtn.innerText = `Confirm Delete (${count})`;
 
-      const listEl = document.getElementById('bulkListPreview');
-      listEl.innerHTML = Array.from(selectedIds).map((id) => {
+      dom.bulkListPreview.innerHTML = Array.from(selectedIds).map((id) => {
         const itm = items.find((i) => i.id === id);
         return `<div class="bulk-item-line">• ${itm ? itm.name : ''} <span style="color:var(--text-muted); font-size:11px;">(${itm ? itm.category : ''})</span></div>`;
       }).join('');
 
-      document.getElementById('bulkDeleteOverlay').classList.add('open');
+      dom.bulkDeleteOverlay.classList.add('open');
     };
 
     window.closeBulkDeleteSheet = function() {
-      document.getElementById('bulkDeleteOverlay').classList.remove('open');
+      dom.bulkDeleteOverlay.classList.remove('open');
     };
 
     window.confirmBulkDelete = async function() {
@@ -872,7 +881,7 @@
       selectedIds.forEach((id) => {
         batch.delete(doc(db, "garage_items", id));
       });
-      await batch.commit();
+      await batch.commit().catch(console.error);
 
       closeBulkDeleteSheet();
       exitSelectionMode();
@@ -905,47 +914,37 @@
     };
 
     window.toggleQuickFilter = function(type) {
-      if (quickFilter === type) {
-        quickFilter = null; 
-      } else {
-        quickFilter = type; 
-      }
+      quickFilter = quickFilter === type ? null : type;
       render();
     };
 
     function render() {
-      const grid = document.getElementById('bentoGrid');
-      const filterBar = document.getElementById('categoryFilters');
-      const selBar = document.getElementById('selectionBar');
-      const selCount = document.getElementById('selectionCount');
-      const bulkDeleteBar = document.getElementById('bulkDeleteBar');
-      const statCardOut = document.getElementById('statCardOut');
-      const statCardLow = document.getElementById('statCardLow');
-
       const outCount = items.filter((i) => i.amount === 0).length;
       const lowCount = items.filter((i) => i.amount === 1).length;
-      document.getElementById('outCount').innerText = `${outCount} items`;
-      document.getElementById('lowCount').innerText = `${lowCount} items`;
-      document.getElementById('summaryText').innerText = `${items.length} items total • ${outCount} empty • ${lowCount} low`;
+      dom.outCount.innerText = `${outCount} items`;
+      dom.lowCount.innerText = `${lowCount} items`;
+      dom.summaryText.innerText = `${items.length} items total • ${outCount} empty • ${lowCount} low`;
 
-      statCardOut.classList.toggle('active-filter-card', quickFilter === 'out');
-      statCardLow.classList.toggle('active-filter-card', quickFilter === 'low');
+      dom.statCardOut.classList.toggle('active-filter-card', quickFilter === 'out');
+      dom.statCardLow.classList.toggle('active-filter-card', quickFilter === 'low');
 
       if (selectionMode) {
-        selBar.classList.add('active');
-        selCount.innerText = `✓ ${selectedIds.size} Selected`;
-        bulkDeleteBar.innerText = `🗑️ Delete ${selectedIds.size} Selected Items`;
+        dom.selBar.classList.add('active');
+        dom.selCount.innerText = `✓ ${selectedIds.size} Selected`;
+        dom.bulkDeleteBar.innerText = `🗑️ Delete ${selectedIds.size} Selected Items`;
       } else {
-        selBar.classList.remove('active');
+        dom.selBar.classList.remove('active');
       }
 
+      // Render Categories
       const allFilterCategories = ["All", ...categories];
-      filterBar.innerHTML = allFilterCategories.map((cat) => {
+      dom.filterBar.innerHTML = allFilterCategories.map((cat) => {
         const count = cat === "All" ? items.length : items.filter((i) => i.category === cat).length;
         const esc = escapeAttr(cat);
         return `<div class="chip ${currentFilter === cat && !quickFilter ? 'active' : ''}" onclick="setFilter('${esc}')">${cat} (${count})</div>`;
       }).join('');
 
+      // Filter Evaluation
       let filtered = items.filter((i) => currentFilter === "All" || i.category === currentFilter);
       if (quickFilter === 'out') {
         filtered = filtered.filter(i => i.amount === 0);
@@ -953,36 +952,43 @@
         filtered = filtered.filter(i => i.amount === 1);
       }
 
-      grid.innerHTML = filtered.map((item) => {
+      // Render Item Grid with Fragment buffer to prevent intermediate redraws
+      const fragment = document.createDocumentFragment();
+      filtered.forEach((item) => {
         const isOut = item.amount === 0;
         const isLow = item.amount === 1;
         const isSelected = selectedIds.has(item.id);
 
-        let borderClass = isSelected ? 'is-selected' : (isOut ? 'is-out' : (isLow ? 'is-low' : ''));
-        let countClass = isOut ? 'count-out' : (isLow ? 'count-low' : '');
-        let badgeHtml = isOut ? '<span class="status-badge badge-out">OUT OF STOCK</span>' :
-                        (isLow ? '<span class="status-badge badge-low">LOW STOCK</span>' : '');
+        const card = document.createElement('div');
+        card.className = `bento-card ${isSelected ? 'is-selected' : (isOut ? 'is-out' : (isLow ? 'is-low' : ''))}`;
+        card.onclick = () => window.handleCardClick(item.id);
 
-        return `
-          <div class="bento-card ${borderClass}" onclick="handleCardClick('${item.id}')">
-            <div>
-              <div class="card-top">
-                <span class="category-chip">${item.category ? item.category.split(" ")[0] : 'ITEM'}</span>
-                ${badgeHtml}
-                <div class="chk-circle">${isSelected ? '✓' : ''}</div>
-              </div>
-              <div class="card-title">${item.name}</div>
+        const badgeHtml = isOut ? '<span class="status-badge badge-out">OUT OF STOCK</span>' :
+                          (isLow ? '<span class="status-badge badge-low">LOW STOCK</span>' : '');
+
+        card.innerHTML = `
+          <div>
+            <div class="card-top">
+              <span class="category-chip">${item.category ? item.category.split(" ")[0] : 'ITEM'}</span>
+              ${badgeHtml}
+              <div class="chk-circle">${isSelected ? '✓' : ''}</div>
             </div>
-            <div class="stepper-pill" onclick="event.stopPropagation()">
-              <button class="stepper-btn" onclick="updateStock('${item.id}', -1, event)">—</button>
-              <span class="stepper-count ${countClass}">${item.amount}</span>
-              <button class="stepper-btn" onclick="updateStock('${item.id}', 1, event)">+</button>
-            </div>
+            <div class="card-title">${item.name}</div>
+          </div>
+          <div class="stepper-pill" onclick="event.stopPropagation()">
+            <button class="stepper-btn" onclick="updateStock('${item.id}', -1, event)">—</button>
+            <span class="stepper-count ${isOut ? 'count-out' : (isLow ? 'count-low' : '')}">${item.amount}</span>
+            <button class="stepper-btn" onclick="updateStock('${item.id}', 1, event)">+</button>
           </div>
         `;
-      }).join('');
+        fragment.appendChild(card);
+      });
+
+      dom.grid.innerHTML = '';
+      dom.grid.appendChild(fragment);
     }
 
+    // Startup & Version Handshake
     window.addEventListener('load', () => {
       if (localStorage.getItem('app_version') !== APP_VERSION) {
         localStorage.setItem('app_version', APP_VERSION);
