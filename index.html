@@ -185,8 +185,6 @@
       position: fixed;
       bottom: calc(env(safe-area-inset-bottom, 16px) + 16px);
       right: 20px;
-      left: auto;
-      transform: none;
       width: 56px;
       height: 56px;
       background: var(--fab-bg);
@@ -202,10 +200,7 @@
       justify-content: center;
       z-index: 10;
     }
-    .fab-icon { font-size: 28px; line-height: 1; }
-    .fab-text { display: none; }
 
-    /* Bulk Delete Floating Bar (Centered at bottom during multi-select) */
     .bulk-delete-bar { 
       display: none; 
       position: fixed; 
@@ -229,6 +224,7 @@
     body.selection-active .fab-bottom { display: none !important; }
     body.selection-active .bulk-delete-bar { display: block; }
 
+    /* Option 3 Full-Screen Focused Modal Canvas Styles */
     .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 99; align-items: flex-end; justify-content: center; }
     .modal-overlay.open { display: flex; }
     
@@ -236,17 +232,36 @@
       background: var(--card-bg); 
       width: 100%; 
       max-width: 520px; 
-      border-radius: 24px 24px 0 0; 
-      padding: 24px 20px calc(env(safe-area-inset-bottom, 20px) + 24px) 20px; 
-      box-shadow: 0 -4px 25px rgba(0,0,0,0.25);
-      max-height: 85vh;
+      border-radius: 28px 28px 0 0; 
+      padding: 24px 20px calc(env(safe-area-inset-bottom, 20px) + 32px) 20px; 
+      box-shadow: 0 -10px 40px rgba(0,0,0,0.3);
+      max-height: 90vh;
       overflow-y: auto;
+      animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-    .close-btn { background: transparent; border: none; font-size: 22px; cursor: pointer; color: var(--text-muted); }
-    .input-field { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--bg); color: var(--text); margin-bottom: 12px; outline: none; }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
-    .modal-submit-btn { width: 100%; height: 50px; background: var(--fab-bg); color: var(--fab-text); border: none; border-radius: 14px; font-size: 15px; font-weight: 800; cursor: pointer; margin-top: 4px; }
+    .modal-top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+    .modal-cancel-btn { background: none; border: none; font-size: 15px; font-weight: 700; color: var(--text-muted); cursor: pointer; }
+    .modal-title-header { font-size: 16px; font-weight: 800; }
+    .modal-save-btn { background: var(--fab-bg); color: var(--fab-text); border: none; padding: 6px 16px; border-radius: 14px; font-size: 14px; font-weight: 800; cursor: pointer; }
+
+    .form-group { margin-bottom: 20px; }
+    .form-label { font-size: 11px; font-weight: 800; letter-spacing: 0.6px; color: var(--text-muted); margin-bottom: 8px; display: block; text-transform: uppercase; }
+    
+    .input-field { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 14px; font-size: 15px; background: var(--bg); color: var(--text); outline: none; }
+
+    /* Interactive Category Selection Pills Inside Modal */
+    .modal-cat-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+    .modal-cat-pill { padding: 8px 14px; border-radius: 14px; font-size: 13px; font-weight: 700; border: 1px solid var(--border); background: var(--bg); color: var(--text-muted); cursor: pointer; transition: all 0.15s ease; }
+    .modal-cat-pill.active { background: var(--fab-bg); color: var(--fab-text); border-color: var(--fab-bg); }
+    .modal-cat-pill.new-pill { border-style: dashed; color: var(--text); }
+
+    /* Tactile Initial Quantity Stepper Inside Modal */
+    .modal-stepper { display: flex; align-items: center; justify-content: space-between; background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 8px 16px; }
+    .modal-step-btn { background: var(--card-bg); border: 1px solid var(--border); font-size: 20px; font-weight: 800; color: var(--text); width: 40px; height: 40px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .modal-step-btn:active { background: var(--border); }
+    .modal-step-val { font-size: 20px; font-weight: 800; }
 
     .bulk-list-preview { max-height: 140px; overflow-y: auto; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; margin: 14px 0; }
     .bulk-item-line { font-size: 13px; font-weight: 600; padding: 4px 0; color: var(--out-border); }
@@ -303,32 +318,49 @@
 
   <!-- Permanent Rounded Square Corner Floating Action Button -->
   <button class="fab-bottom" id="fabAdd" onclick="toggleAddModal(true)" title="Add New Item">
-    <span class="fab-icon">+</span>
+    +
   </button>
 
   <button class="bulk-delete-bar" id="bulkDeleteBar" onclick="openBulkDeleteSheet()">🗑️ Delete Selected Items</button>
 
+  <!-- Option 3: Full-Screen Focused Add Item Modal Canvas -->
   <div class="modal-overlay" id="addModalOverlay" onclick="if(event.target===this) toggleAddModal(false)">
     <div class="modal">
-      <div class="modal-header">
-        <h3 style="font-size: 18px; font-weight: 800;">Add Garage Item</h3>
-        <button class="close-btn" onclick="toggleAddModal(false)">&times;</button>
+      <div class="modal-top-bar">
+        <button class="modal-cancel-btn" onclick="toggleAddModal(false)">Cancel</button>
+        <div class="modal-title-header">New Item</div>
+        <button class="modal-save-btn" onclick="addNewItem()">Save</button>
       </div>
-      <input type="text" id="newItemName" class="input-field" placeholder="Item Name (e.g. Pasta Sauce)" />
-      
-      <select id="newItemCategory" class="input-field" onchange="handleCategorySelect(this)"></select>
-      <input type="text" id="inlineNewCategory" class="input-field" style="display: none;" placeholder="Enter new category name..." />
 
-      <input type="number" id="newItemAmount" class="input-field" placeholder="Initial Quantity" value="1" min="0" />
-      <button class="modal-submit-btn" onclick="addNewItem()">Save Item</button>
+      <div class="form-group">
+        <label class="form-label">What's the item?</label>
+        <input type="text" id="newItemName" class="input-field" placeholder="e.g. WD-40 Lubricant" autocomplete="off" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Choose Category</label>
+        <div class="modal-cat-grid" id="modalCatGrid"></div>
+        <input type="text" id="inlineNewCategory" class="input-field" style="display: none; margin-top: 8px;" placeholder="Type new category name..." />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Starting Quantity</label>
+        <div class="modal-stepper">
+          <button class="modal-step-btn" onclick="adjustModalQty(-1)">—</button>
+          <span class="modal-step-val" id="modalQtyVal">1</span>
+          <button class="modal-step-btn" onclick="adjustModalQty(1)">+</button>
+        </div>
+      </div>
     </div>
   </div>
 
+  <!-- Category Management Tray -->
   <div class="modal-overlay" id="categoryModalOverlay" onclick="if(event.target===this) toggleCategoryModal(false)">
     <div class="modal">
-      <div class="modal-header">
-        <h3 style="font-size: 18px; font-weight: 800;">Manage Categories</h3>
-        <button class="close-btn" onclick="toggleCategoryModal(false)">&times;</button>
+      <div class="modal-top-bar">
+        <button class="modal-cancel-btn" onclick="toggleCategoryModal(false)">Close</button>
+        <div class="modal-title-header">Manage Categories</div>
+        <div style="width: 50px;"></div>
       </div>
       <div style="display: flex; gap: 8px; margin-bottom: 16px;">
         <input type="text" id="newCatInput" class="input-field" style="margin-bottom: 0;" placeholder="New category name..." />
@@ -338,6 +370,7 @@
     </div>
   </div>
 
+  <!-- Bulk Delete Confirmation Tray -->
   <div class="modal-overlay" id="bulkDeleteOverlay" onclick="if(event.target===this) closeBulkDeleteSheet()">
     <div class="modal">
       <div style="text-align: center; margin-bottom: 12px;">
@@ -361,7 +394,6 @@
       setDoc, 
       addDoc, 
       updateDoc, 
-      deleteDoc, 
       writeBatch, 
       increment, 
       serverTimestamp,
@@ -369,7 +401,7 @@
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     // === 1. FIREBASE CONFIGURATION & INITIALIZATION ===
-    const APP_VERSION = "2.3.0";
+    const APP_VERSION = "3.1.0";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAMznXG0OXHqMdfrmOGHK-g08TugsYfWw8",
@@ -420,6 +452,8 @@
     let currentFilter = "All";
     let selectionMode = false;
     let selectedIds = new Set();
+    let selectedModalCategory = "";
+    let modalInitialQty = 1;
 
     // === 2. THEME & NOTIFICATION CONTROLS ===
     window.setTheme = function(mode) {
@@ -516,7 +550,7 @@
     window.addEventListener('online', () => updateSyncStatus(true));
     window.addEventListener('offline', () => updateSyncStatus(false));
 
-    // === 4. RAPID-TAP ATOMIC ENGINE ===
+    // === 4. RAPID-TAP ATOMIC ENGINE & ADD ITEM ===
     window.updateStock = async function(id, delta, event) {
       if (event) event.stopPropagation();
       if (selectionMode) return;
@@ -532,10 +566,15 @@
       }).catch((err) => console.error("Update failed:", err));
     };
 
+    window.adjustModalQty = function(delta) {
+      modalInitialQty = Math.max(0, modalInitialQty + delta);
+      document.getElementById('modalQtyVal').innerText = modalInitialQty;
+    };
+
     window.addNewItem = async function() {
       const nameInput = document.getElementById('newItemName');
       const name = nameInput.value.trim();
-      let category = document.getElementById('newItemCategory').value;
+      let category = selectedModalCategory;
       const inlineInput = document.getElementById('inlineNewCategory');
       
       if (category === '__new__') {
@@ -547,13 +586,13 @@
         }
       }
 
-      const amount = parseInt(document.getElementById('newItemAmount').value) || 0;
       if (!name) return alert('Please enter an item name');
+      if (!category) return alert('Please select a category');
 
       await addDoc(itemsCol, {
         name,
         category,
-        amount,
+        amount: modalInitialQty,
         updatedAt: serverTimestamp()
       });
 
@@ -563,20 +602,41 @@
       toggleAddModal(false);
     };
 
-    // === 5. CATEGORY MANAGEMENT ===
-    function populateCategoryDropdown() {
-      const select = document.getElementById('newItemCategory');
-      select.innerHTML = categories.map((c) => `<option value="${c}">${c}</option>`).join('') +
-                         `<option value="__new__">+ Create New Category...</option>`;
+    // === 5. CATEGORY MANAGEMENT & MODAL PILLS ===
+    function renderModalCategoryPills() {
+      const grid = document.getElementById('modalCatGrid');
+      if (!selectedModalCategory && categories.length > 0) {
+        selectedModalCategory = categories[0];
+      }
+
+      grid.innerHTML = categories.map((c) => `
+        <div class="modal-cat-pill ${selectedModalCategory === c ? 'active' : ''}" onclick="selectModalCategory('${c}')">${c}</div>
+      `).join('') + `<div class="modal-cat-pill new-pill ${selectedModalCategory === '__new__' ? 'active' : ''}" onclick="selectModalCategory('__new__')">+ New Category...</div>`;
     }
 
-    window.handleCategorySelect = function(selectEl) {
+    window.selectModalCategory = function(cat) {
+      selectedModalCategory = cat;
       const inlineInput = document.getElementById('inlineNewCategory');
-      if (selectEl.value === '__new__') {
+      if (cat === '__new__') {
         inlineInput.style.display = 'block';
         inlineInput.focus();
       } else {
         inlineInput.style.display = 'none';
+      }
+      renderModalCategoryPills();
+    };
+
+    window.toggleAddModal = function(open) {
+      const overlay = document.getElementById('addModalOverlay');
+      if (open) {
+        modalInitialQty = 1;
+        document.getElementById('modalQtyVal').innerText = modalInitialQty;
+        if (categories.length > 0) selectedModalCategory = categories[0];
+        renderModalCategoryPills();
+        overlay.classList.add('open');
+        setTimeout(() => document.getElementById('newItemName').focus(), 100);
+      } else {
+        overlay.classList.remove('open');
       }
     };
 
@@ -702,7 +762,7 @@
       exitSelectionMode();
     };
 
-    // === 7. NOTIFICATIONS & MODALS ===
+    // === 7. NOTIFICATIONS ===
     window.enableLockscreenAlerts = function() {
       if (!('Notification' in window)) return alert('Notifications not supported on this browser.');
       Notification.requestPermission().then((perm) => {
@@ -722,11 +782,6 @@
         });
       }
     }
-
-    window.toggleAddModal = function(open) {
-      populateCategoryDropdown();
-      document.getElementById('addModalOverlay').classList.toggle('open', open);
-    };
 
     window.setFilter = function(cat) {
       currentFilter = cat;
@@ -793,7 +848,6 @@
       }).join('');
     }
 
-    // Auto-refresh on version change & initiate real-time socket
     window.addEventListener('load', () => {
       if (localStorage.getItem('app_version') !== APP_VERSION) {
         localStorage.setItem('app_version', APP_VERSION);
