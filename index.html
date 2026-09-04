@@ -153,7 +153,6 @@
     .filters::-webkit-scrollbar { display: none; }
     .chip { padding: 6px 14px; border-radius: 16px; font-size: 12px; font-weight: 700; border: 1px solid var(--border); background: var(--card-bg); color: var(--text-muted); cursor: pointer; white-space: nowrap; transition: background 0.15s ease; }
     .chip.active { background: var(--fab-bg); color: var(--fab-text); border-color: var(--fab-bg); }
-    .chip-manage { background: transparent; border-style: dashed; }
 
     .bento-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .bento-card { 
@@ -289,7 +288,6 @@
     .cat-manage-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; }
     .cat-del-btn { background: none; border: none; color: var(--out-border); font-size: 16px; cursor: pointer; padding: 4px; }
 
-    /* Custom Category Delete Dialog (Overlay Level 100) */
     .confirm-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
     .confirm-overlay.open { display: flex; }
     .confirm-box { background: var(--card-bg); width: 100%; max-width: 360px; border-radius: 24px; padding: 24px 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); text-align: center; animation: popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
@@ -329,6 +327,7 @@
       </div>
     </div>
 
+    <!-- Interactive Bento Summary Widgets -->
     <div class="bento-stats">
       <div class="stat-card out" id="statCardOut" onclick="toggleQuickFilter('out')">
         <div class="stat-label">OUT OF STOCK</div>
@@ -408,7 +407,6 @@
     </div>
   </div>
 
-  <!-- Custom Appealing Category Delete Sheet -->
   <div class="confirm-overlay" id="catDeleteDialogOverlay" onclick="if(event.target===this) closeCategoryDeleteDialog()">
     <div class="confirm-box">
       <div class="confirm-icon">⚠️</div>
@@ -435,7 +433,7 @@
       enableIndexedDbPersistence
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    const APP_VERSION = "3.8.0";
+    const APP_VERSION = "3.9.0";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAMznXG0OXHqMdfrmOGHK-g08TugsYfWw8",
@@ -463,9 +461,9 @@
       { name: "Frosted Flakes", amount: 2, category: "Cereal" },
       { name: "Granola", amount: 2, category: "Cereal" },
       { name: "Weetabix", amount: 2, category: "Cereal" },
-      { name: "Gluten Free Granola", amount: 2, category: "Gluten Free Cereal's" },
-      { name: "Gluten Free Porridge", amount: 2, category: "Gluten Free Cereal's" },
-      { name: "Gluten Free Weetabix", amount: 0, category: "Gluten Free Cereal's" },
+      { name: "Gluten Free Granola", amount: 2, category: "Gluten Free Cereal" },
+      { name: "Gluten Free Porridge", amount: 2, category: "Gluten Free Cereal" },
+      { name: "Gluten Free Weetabix", amount: 0, category: "Gluten Free Cereal" },
       { name: "Dettol Spray", amount: 4, category: "Cleaning" },
       { name: "Dishwasher Cleaner", amount: 0, category: "Cleaning" },
       { name: "Fairy Liquid", amount: 2, category: "Cleaning" },
@@ -479,7 +477,7 @@
       { name: "Tea", amount: 2, category: "Condiments" }
     ];
 
-    const defaultCategories = ["Cereal", "Gluten Free Cereal's", "Cleaning", "Household", "Condiments", "Spreads", "Kitchenware"];
+    const defaultCategories = ["Cereal", "Gluten Free Cereal", "Cleaning", "Household", "Condiments", "Spreads", "Kitchenware"];
 
     let items = [];
     let categories = defaultCategories;
@@ -530,8 +528,10 @@
         if (snap.exists() && Array.isArray(snap.data().list)) {
           const uniqueSet = new Set();
           snap.data().list.forEach(c => {
-            const norm = sanitizeCategoryName(c);
-            uniqueSet.add(norm);
+            if (c && typeof c === 'string') {
+              const norm = sanitizeCategoryName(c);
+              uniqueSet.add(norm);
+            }
           });
           loadedCats = Array.from(uniqueSet);
         } else {
@@ -566,6 +566,19 @@
         });
 
         items = loaded;
+
+        // Auto-adopt any category currently present on items into categories list
+        let catsChanged = false;
+        items.forEach(itm => {
+          if (itm.category && !categories.includes(itm.category)) {
+            categories.push(itm.category);
+            catsChanged = true;
+          }
+        });
+        if (catsChanged) {
+          setDoc(metaDoc, { list: categories });
+        }
+
         render();
         updateSyncStatus(true);
       }, (err) => {
@@ -678,15 +691,20 @@
       toggleAddModal(false);
     };
 
+    function escapeAttr(str) {
+      return (str || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    }
+
     function renderModalCategoryPills() {
       const grid = document.getElementById('modalCatGrid');
       if (!selectedModalCategory && categories.length > 0) {
         selectedModalCategory = categories[0];
       }
 
-      grid.innerHTML = categories.map((c) => `
-        <div class="modal-cat-pill ${selectedModalCategory === c ? 'active' : ''}" onclick="selectModalCategory('${c}')">${c}</div>
-      `).join('') + `<div class="modal-cat-pill new-pill ${selectedModalCategory === '__new__' ? 'active' : ''}" onclick="selectModalCategory('__new__')">+ New Category...</div>`;
+      grid.innerHTML = categories.map((c) => {
+        const esc = escapeAttr(c);
+        return `<div class="modal-cat-pill ${selectedModalCategory === c ? 'active' : ''}" onclick="selectModalCategory('${esc}')">${c}</div>`;
+      }).join('') + `<div class="modal-cat-pill new-pill ${selectedModalCategory === '__new__' ? 'active' : ''}" onclick="selectModalCategory('__new__')">+ New Category...</div>`;
     }
 
     window.selectModalCategory = function(cat) {
@@ -729,13 +747,14 @@
       const listEl = document.getElementById('categoryManageList');
       listEl.innerHTML = categories.map((cat) => {
         const count = items.filter((i) => i.category === cat).length;
+        const esc = escapeAttr(cat);
         return `
           <div class="cat-manage-row">
             <div>
               <span style="font-weight:700; font-size:14px;">${cat}</span>
               <span style="font-size:11px; color:var(--text-muted); margin-left:6px;">(${count} items)</span>
             </div>
-            <button class="cat-del-btn" onclick="openCategoryDeleteDialog('${cat}')" title="Delete Category">✕</button>
+            <button class="cat-del-btn" onclick="openCategoryDeleteDialog('${esc}')" title="Delete Category">✕</button>
           </div>
         `;
       }).join('');
@@ -787,7 +806,7 @@
 
       categories = categories.filter((c) => c !== cat);
       if (currentFilter === cat) currentFilter = "All";
-      setDoc(metaDoc, { list: categories });
+      await setDoc(metaDoc, { list: categories });
 
       closeCategoryDeleteDialog();
       renderCategoryManageList();
@@ -923,7 +942,8 @@
       const allFilterCategories = ["All", ...categories];
       filterBar.innerHTML = allFilterCategories.map((cat) => {
         const count = cat === "All" ? items.length : items.filter((i) => i.category === cat).length;
-        return `<div class="chip ${currentFilter === cat && !quickFilter ? 'active' : ''}" onclick="setFilter('${cat}')">${cat} (${count})</div>`;
+        const esc = escapeAttr(cat);
+        return `<div class="chip ${currentFilter === cat && !quickFilter ? 'active' : ''}" onclick="setFilter('${esc}')">${cat} (${count})</div>`;
       }).join('');
 
       let filtered = items.filter((i) => currentFilter === "All" || i.category === currentFilter);
