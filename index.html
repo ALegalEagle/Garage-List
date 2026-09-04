@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Garage Stock" />
   <title>Garage Stock</title>
 
-  <!-- Prevent browser from caching outdated app versions -->
+  <!-- Prevent stale caching on home screen PWA -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
@@ -62,10 +62,26 @@
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
-    body { background: var(--bg); color: var(--text); padding-bottom: 100px; transition: background 0.15s ease, color 0.15s ease; user-select: none; }
-    .container { max-width: 540px; margin: 0 auto; padding: 16px; }
+    
+    body { 
+      background: var(--bg); 
+      color: var(--text); 
+      transition: background 0.15s ease, color 0.15s ease; 
+      user-select: none;
+      min-height: 100vh;
+    }
 
-    /* Pull-down to sync indicator */
+    /* Fixed iOS Safe-Area Insets for Notch and Bottom Indicator */
+    .container { 
+      max-width: 540px; 
+      margin: 0 auto; 
+      padding-top: calc(env(safe-area-inset-top, 20px) + 14px);
+      padding-left: 16px;
+      padding-right: 16px;
+      padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 95px);
+    }
+
+    /* Pull-down to sync badge */
     .pull-indicator {
       position: fixed;
       top: -50px;
@@ -85,7 +101,7 @@
       pointer-events: none;
     }
     .pull-indicator.visible {
-      top: 14px;
+      top: calc(env(safe-area-inset-top, 20px) + 10px);
       opacity: 1;
     }
 
@@ -94,7 +110,6 @@
     .title-row { display: flex; align-items: center; gap: 8px; }
     .title-row h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
 
-    /* Sync Indicator (Green when synced, Red when pending/offline) */
     .sync-indicator { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: var(--synced-color); transition: color 0.2s ease; }
     .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--synced-color); display: inline-block; transition: background 0.2s ease; }
     .sync-indicator.pending { color: var(--out-border) !important; }
@@ -123,7 +138,7 @@
 
     /* Bento Summary Widgets */
     .bento-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
-    .stat-card { border-radius: 16px; padding: 16px; border-width: 2px; border-style: solid; min-height: 82px; display: flex; flex-direction: column; justify-content: space-between; }
+    .stat-card { border-radius: 16px; padding: 14px 16px; border-width: 2px; border-style: solid; min-height: 80px; display: flex; flex-direction: column; justify-content: space-between; }
     .stat-card.out { background: var(--out-bg); border-color: var(--out-border); }
     .stat-card.low { background: var(--low-bg); border-color: var(--low-border); }
     .stat-label { font-size: 10px; font-weight: 800; letter-spacing: 0.6px; }
@@ -136,8 +151,9 @@
     .filters::-webkit-scrollbar { display: none; }
     .chip { padding: 6px 14px; border-radius: 16px; font-size: 12px; font-weight: 700; border: 1px solid var(--border); background: var(--card-bg); color: var(--text-muted); cursor: pointer; white-space: nowrap; }
     .chip.active { background: var(--fab-bg); color: var(--fab-text); border-color: var(--fab-bg); }
+    .chip-manage { background: transparent; border-style: dashed; }
 
-    /* Bento 2-Column Grid */
+    /* Bento Grid Cards */
     .bento-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .bento-card { background: var(--card-bg); border-radius: 16px; padding: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; justify-content: space-between; min-height: 124px; transition: transform 0.1s ease, border-color 0.15s ease; position: relative; }
     .bento-card.is-out { border: 2.5px solid var(--out-border) !important; }
@@ -153,7 +169,6 @@
     .badge-out { background: var(--out-badge); }
     .badge-low { background: var(--low-badge); }
 
-    /* Checkbox Circle in Selection Mode */
     .chk-circle { display: none; width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--text-muted); align-items: center; justify-content: center; font-size: 12px; font-weight: 800; }
     body.selection-active .chk-circle { display: flex; }
     body.selection-active .status-badge { display: none; }
@@ -171,24 +186,101 @@
 
     body.selection-active .stepper-btn { pointer-events: none; opacity: 0.2; }
 
-    /* Action Buttons at Screen Bottom */
-    .fab-bottom { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); width: calc(100% - 32px); max-width: 508px; background: var(--fab-bg); color: var(--fab-text); border: none; border-radius: 16px; padding: 14px; font-size: 15px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.15); text-align: center; z-index: 10; }
-    .bulk-delete-bar { display: none; position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); width: calc(100% - 32px); max-width: 508px; background: var(--out-border); color: #fff; border: none; border-radius: 16px; padding: 15px; font-size: 15px; font-weight: 800; cursor: pointer; box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4); text-align: center; z-index: 10; }
-    body.selection-active .fab-bottom { display: none; }
+    /* Morphing Floating Action Button (Transitions on Scroll) */
+    .fab-bottom {
+      position: fixed;
+      bottom: calc(env(safe-area-inset-bottom, 16px) + 16px);
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(100% - 32px);
+      max-width: 508px;
+      height: 52px;
+      background: var(--fab-bg);
+      color: var(--fab-text);
+      border: none;
+      border-radius: 16px;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), 
+                  height 0.25s cubic-bezier(0.4, 0, 0.2, 1), 
+                  border-radius 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                  transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                  left 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                  right 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .fab-icon { font-size: 22px; line-height: 1; transition: font-size 0.2s ease; }
+    .fab-text { margin-left: 6px; white-space: nowrap; overflow: hidden; max-width: 150px; opacity: 1; transition: max-width 0.2s ease, opacity 0.2s ease, margin 0.2s ease; }
+
+    /* When scrolled down: morphs to corner circle */
+    .fab-bottom.scrolled {
+      left: calc(100% - 76px);
+      transform: none;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+    }
+    .fab-bottom.scrolled .fab-icon { font-size: 28px; }
+    .fab-bottom.scrolled .fab-text { max-width: 0; opacity: 0; margin-left: 0; }
+
+    /* Bulk Delete Floating Bar */
+    .bulk-delete-bar { 
+      display: none; 
+      position: fixed; 
+      bottom: calc(env(safe-area-inset-bottom, 16px) + 16px); 
+      left: 50%; 
+      transform: translateX(-50%); 
+      width: calc(100% - 32px); 
+      max-width: 508px; 
+      background: var(--out-border); 
+      color: #fff; 
+      border: none; 
+      border-radius: 16px; 
+      padding: 15px; 
+      font-size: 15px; 
+      font-weight: 800; 
+      cursor: pointer; 
+      box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4); 
+      text-align: center; 
+      z-index: 10; 
+    }
+    body.selection-active .fab-bottom { display: none !important; }
     body.selection-active .bulk-delete-bar { display: block; }
 
-    /* Modals & Trays */
+    /* Modals & Bottom Sheets (Fixed Spacing & Padding) */
     .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 99; align-items: flex-end; justify-content: center; }
     .modal-overlay.open { display: flex; }
-    .modal { background: var(--card-bg); width: 100%; max-width: 520px; border-radius: 24px 24px 0 0; padding: 24px 20px; box-shadow: 0 -4px 25px rgba(0,0,0,0.25); }
+    
+    .modal { 
+      background: var(--card-bg); 
+      width: 100%; 
+      max-width: 520px; 
+      border-radius: 24px 24px 0 0; 
+      padding: 24px 20px calc(env(safe-area-inset-bottom, 20px) + 24px) 20px; 
+      box-shadow: 0 -4px 25px rgba(0,0,0,0.25);
+      max-height: 85vh;
+      overflow-y: auto;
+    }
     .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
     .close-btn { background: transparent; border: none; font-size: 22px; cursor: pointer; color: var(--text-muted); }
     .input-field { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--bg); color: var(--text); margin-bottom: 12px; outline: none; }
+
+    .modal-submit-btn { width: 100%; height: 50px; background: var(--fab-bg); color: var(--fab-text); border: none; border-radius: 14px; font-size: 15px; font-weight: 800; cursor: pointer; margin-top: 4px; }
 
     .bulk-list-preview { max-height: 140px; overflow-y: auto; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; margin: 14px 0; }
     .bulk-item-line { font-size: 13px; font-weight: 600; padding: 4px 0; color: var(--out-border); }
     .btn-danger { width: 100%; padding: 15px; background: var(--out-border); color: white; border: none; border-radius: 14px; font-size: 15px; font-weight: 800; cursor: pointer; margin-bottom: 10px; }
     .btn-cancel { width: 100%; padding: 12px; background: var(--pill-bg); color: var(--text); border: 1px solid var(--border); border-radius: 14px; font-size: 14px; font-weight: 700; cursor: pointer; }
+
+    /* Category Manage List Items */
+    .cat-manage-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; }
+    .cat-del-btn { background: none; border: none; color: var(--out-border); font-size: 16px; cursor: pointer; padding: 4px; }
   </style>
 </head>
 <body>
@@ -224,7 +316,7 @@
       </div>
     </div>
 
-    <!-- Bento Top Alert Widgets -->
+    <!-- Bento Top Summary Widgets -->
     <div class="bento-stats">
       <div class="stat-card out">
         <div class="stat-label">OUT OF STOCK</div>
@@ -243,7 +335,12 @@
     <div class="bento-grid" id="bentoGrid"></div>
   </div>
 
-  <button class="fab-bottom" onclick="toggleAddModal(true)">+ Add New Item</button>
+  <!-- Morphing Floating Action Button -->
+  <button class="fab-bottom" id="fabAdd" onclick="toggleAddModal(true)">
+    <span class="fab-icon">+</span>
+    <span class="fab-text">Add New Item</span>
+  </button>
+
   <button class="bulk-delete-bar" id="bulkDeleteBar" onclick="openBulkDeleteSheet()">🗑️ Delete Selected Items</button>
 
   <!-- Add Item Modal -->
@@ -254,21 +351,31 @@
         <button class="close-btn" onclick="toggleAddModal(false)">&times;</button>
       </div>
       <input type="text" id="newItemName" class="input-field" placeholder="Item Name (e.g. Pasta Sauce)" />
-      <select id="newItemCategory" class="input-field">
-        <option value="Cereal">Cereal</option>
-        <option value="Gluten Free Cereal's">Gluten Free Cereal's</option>
-        <option value="Cleaning">Cleaning</option>
-        <option value="Household">Household</option>
-        <option value="Condiments">Condiments</option>
-        <option value="Spreads">Spreads</option>
-        <option value="Kitchenware">Kitchenware</option>
-      </select>
+      
+      <select id="newItemCategory" class="input-field" onchange="handleCategorySelect(this)"></select>
+      <input type="text" id="inlineNewCategory" class="input-field" style="display: none;" placeholder="Enter new category name..." />
+
       <input type="number" id="newItemAmount" class="input-field" placeholder="Initial Quantity" value="1" min="0" />
-      <button class="fab-bottom" style="position: static; width: 100%; margin-top: 8px;" onclick="addNewItem()">Save Item</button>
+      <button class="modal-submit-btn" onclick="addNewItem()">Save Item</button>
     </div>
   </div>
 
-  <!-- Bulk Delete Confirmation Tray (Lower Half) -->
+  <!-- Category Management Tray -->
+  <div class="modal-overlay" id="categoryModalOverlay" onclick="if(event.target===this) toggleCategoryModal(false)">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 style="font-size: 18px; font-weight: 800;">Manage Categories</h3>
+        <button class="close-btn" onclick="toggleCategoryModal(false)">&times;</button>
+      </div>
+      <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+        <input type="text" id="newCatInput" class="input-field" style="margin-bottom: 0;" placeholder="New category name..." />
+        <button class="action-btn" style="padding: 0 16px; font-weight: 700; background: var(--fab-bg); color: var(--fab-text);" onclick="addNewCategoryFromModal()">Add</button>
+      </div>
+      <div id="categoryManageList" style="display: flex; flex-direction: column; gap: 8px; max-height: 240px; overflow-y: auto;"></div>
+    </div>
+  </div>
+
+  <!-- Bulk Delete Confirmation Tray -->
   <div class="modal-overlay" id="bulkDeleteOverlay" onclick="if(event.target===this) closeBulkDeleteSheet()">
     <div class="modal">
       <div style="text-align: center; margin-bottom: 12px;">
@@ -283,8 +390,8 @@
   </div>
 
   <script>
-    // === 1. VERSION CONTROL & CONFIGURATION ===
-    const APP_VERSION = "1.0.2"; // Bump this number whenever you push a change
+    // === 1. VERSION & CONFIGURATION ===
+    const APP_VERSION = "1.0.3"; // Incremented to trigger instant auto-refresh
     const SCRIPT_URL = "PASTE_YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE";
 
     const defaultData = [
@@ -310,14 +417,17 @@
       { name: "Tea", amount: 2, category: "Condiments" }
     ];
 
+    const defaultCategories = ["Cereal", "Gluten Free Cereal's", "Cleaning", "Household", "Condiments", "Spreads", "Kitchenware"];
+
     let items = JSON.parse(localStorage.getItem('garage_items')) || defaultData;
+    let categories = JSON.parse(localStorage.getItem('garage_categories')) || defaultCategories;
     let syncQueue = JSON.parse(localStorage.getItem('garage_sync_queue')) || [];
     let currentFilter = "All";
 
     let selectionMode = false;
     let selectedIndices = new Set();
 
-    // === 2. THEME & NOTIFICATION BELL VISIBILITY ===
+    // === 2. THEME & HEADER CONTROLS ===
     function setTheme(mode) {
       if (mode === 'dark') {
         document.body.classList.add('dark');
@@ -340,9 +450,10 @@
       }
     }
 
-    // === 3. STORAGE & SILENT BACKGROUND SYNC ===
+    // === 3. STORAGE & SYNC ENGINE ===
     function saveLocally() {
       localStorage.setItem('garage_items', JSON.stringify(items));
+      localStorage.setItem('garage_categories', JSON.stringify(categories));
       localStorage.setItem('garage_sync_queue', JSON.stringify(syncQueue));
     }
 
@@ -371,9 +482,19 @@
 
     function addNewItem() {
       const name = document.getElementById('newItemName').value.trim();
-      const category = document.getElementById('newItemCategory').value;
+      let category = document.getElementById('newItemCategory').value;
+      const inlineInput = document.getElementById('inlineNewCategory');
+      
+      if (category === '__new__') {
+        category = inlineInput.value.trim();
+        if (!category) return alert('Please enter a category name');
+        if (!categories.includes(category)) {
+          categories.push(category);
+        }
+      }
+
       const amount = parseInt(document.getElementById('newItemAmount').value) || 0;
-      if (!name) return;
+      if (!name) return alert('Please enter an item name');
 
       items.unshift({ name, category, amount });
       syncQueue.push({
@@ -385,6 +506,8 @@
       });
 
       document.getElementById('newItemName').value = '';
+      inlineInput.value = '';
+      inlineInput.style.display = 'none';
       toggleAddModal(false);
       saveLocally();
       render();
@@ -441,39 +564,105 @@
         const cloudData = await res.json();
         if (Array.isArray(cloudData) && cloudData.length > 0 && syncQueue.length === 0) {
           items = cloudData;
+          // Refresh custom categories from cloud items
+          cloudData.forEach(i => {
+            if (i.category && !categories.includes(i.category)) categories.push(i.category);
+          });
           saveLocally();
           render();
         }
       } catch (e) {}
     }
 
-    // === 4. LAUNCH & AUTO-REFRESH ===
-    window.addEventListener('online', silentFlushQueue);
-    window.addEventListener('load', () => {
-      // Clear cache and auto-refresh pinned app if version changed
-      if (localStorage.getItem('app_version') !== APP_VERSION) {
-        localStorage.setItem('app_version', APP_VERSION);
-        if ('caches' in window) {
-          caches.keys().then(names => {
-            names.forEach(name => caches.delete(name));
-          });
-        }
-        window.location.reload(true);
-        return;
-      }
+    // === 4. CATEGORY MANAGEMENT ===
+    function populateCategoryDropdown() {
+      const select = document.getElementById('newItemCategory');
+      select.innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join('') +
+                         `<option value="__new__">+ Create New Category...</option>`;
+    }
 
-      render();
-      updateBellVisibility();
-      fetchCloudData();
-    });
-
-    // === 5. SELECTION & DELETION ENGINE ===
-    function toggleSelectionMode() {
-      if (selectionMode) {
-        exitSelectionMode();
+    function handleCategorySelect(selectEl) {
+      const inlineInput = document.getElementById('inlineNewCategory');
+      if (selectEl.value === '__new__') {
+        inlineInput.style.display = 'block';
+        inlineInput.focus();
       } else {
-        enterSelectionMode();
+        inlineInput.style.display = 'none';
       }
+    }
+
+    function toggleCategoryModal(open) {
+      const overlay = document.getElementById('categoryModalOverlay');
+      if (open) {
+        renderCategoryManageList();
+        overlay.classList.add('open');
+      } else {
+        overlay.classList.remove('open');
+      }
+    }
+
+    function renderCategoryManageList() {
+      const listEl = document.getElementById('categoryManageList');
+      listEl.innerHTML = categories.map(cat => {
+        const count = items.filter(i => i.category === cat).length;
+        return `
+          <div class="cat-manage-row">
+            <div>
+              <span style="font-weight:700; font-size:14px;">${cat}</span>
+              <span style="font-size:11px; color:var(--text-muted); margin-left:6px;">(${count} items)</span>
+            </div>
+            <button class="cat-del-btn" onclick="removeCategory('${cat}')" title="Delete Category">✕</button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function addNewCategoryFromModal() {
+      const input = document.getElementById('newCatInput');
+      const val = input.value.trim();
+      if (!val) return;
+      if (!categories.includes(val)) {
+        categories.push(val);
+        input.value = '';
+        saveLocally();
+        renderCategoryManageList();
+        render();
+      }
+    }
+
+    function removeCategory(cat) {
+      const count = items.filter(i => i.category === cat).length;
+      if (count > 0) {
+        if (!confirm(`Move ${count} items in "${cat}" to "General" and delete this category?`)) return;
+        items.forEach(i => {
+          if (i.category === cat) {
+            i.category = "General";
+            syncQueue.push({ action: 'addItem', name: i.name, category: "General", amount: i.amount, timestamp: Date.now() });
+          }
+        });
+      }
+      categories = categories.filter(c => c !== cat);
+      if (currentFilter === cat) currentFilter = "All";
+      saveLocally();
+      renderCategoryManageList();
+      render();
+      silentFlushQueue();
+    }
+
+    // === 5. MORPHING FAB SCROLL HANDLER ===
+    const fabBtn = document.getElementById('fabAdd');
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 30) {
+        fabBtn.classList.add('scrolled');
+      } else {
+        fabBtn.classList.remove('scrolled');
+      }
+    }, { passive: true });
+
+    // === 6. MULTI-SELECT & BULK DELETION ===
+    function toggleSelectionMode() {
+      if (selectionMode) exitSelectionMode();
+      else enterSelectionMode();
     }
 
     function enterSelectionMode() {
@@ -494,36 +683,23 @@
 
     function handleCardClick(origIdx) {
       if (selectionMode) {
-        toggleItemSelection(origIdx);
+        if (selectedIndices.has(origIdx)) selectedIndices.delete(origIdx);
+        else selectedIndices.add(origIdx);
+        render();
       }
-    }
-
-    function toggleItemSelection(idx) {
-      if (selectedIndices.has(idx)) {
-        selectedIndices.delete(idx);
-      } else {
-        selectedIndices.add(idx);
-      }
-      render();
     }
 
     function toggleSelectAll() {
-      if (selectedIndices.size === items.length) {
-        selectedIndices.clear();
-      } else {
-        items.forEach((_, idx) => selectedIndices.add(idx));
-      }
+      if (selectedIndices.size === items.length) selectedIndices.clear();
+      else items.forEach((_, idx) => selectedIndices.add(idx));
       render();
     }
 
     function openBulkDeleteSheet() {
-      if (selectedIndices.size === 0) {
-        alert("Please tap to select at least one item to delete.");
-        return;
-      }
+      if (selectedIndices.size === 0) return alert("Tap to select at least one item to delete.");
       const count = selectedIndices.size;
       document.getElementById('bulkDeleteTitle').innerText = `Delete ${count} Selected ${count === 1 ? 'Item' : 'Items'}?`;
-      document.getElementById('confirmBulkDeleteBtn').innerText = `🗑️ Confirm Delete (${count} ${count === 1 ? 'Item' : 'Items'})`;
+      document.getElementById('confirmBulkDeleteBtn').innerText = `Confirm Delete (${count})`;
 
       const listEl = document.getElementById('bulkListPreview');
       listEl.innerHTML = Array.from(selectedIndices).map(idx => {
@@ -540,17 +716,11 @@
 
     function confirmBulkDelete() {
       const toDeleteNames = Array.from(selectedIndices).map(idx => items[idx].name);
-
       toDeleteNames.forEach(name => {
-        syncQueue.push({
-          action: 'deleteItem',
-          name,
-          timestamp: Date.now()
-        });
+        syncQueue.push({ action: 'deleteItem', name, timestamp: Date.now() });
       });
 
       items = items.filter((_, idx) => !selectedIndices.has(idx));
-
       closeBulkDeleteSheet();
       exitSelectionMode();
       saveLocally();
@@ -558,58 +728,22 @@
       silentFlushQueue();
     }
 
-    // === 6. LOCKSCREEN NOTIFICATIONS ===
-    function enableLockscreenAlerts() {
-      if (!('Notification' in window)) {
-        alert('Notifications not supported on this browser.');
-        return;
-      }
-      Notification.requestPermission().then(perm => {
-        if (perm === 'granted') {
-          updateBellVisibility();
-          showLocalNotification("Garage Alerts Enabled");
-        }
-      });
-    }
-
-    function showLocalNotification(itemName) {
-      if ('Notification' in window && Notification.permission === 'granted') {
-        const title = itemName === "Garage Alerts Enabled" ? "Garage Stock Active" : "Out of Stock ⚠️";
-        const body = itemName === "Garage Alerts Enabled" ? "You will receive alerts here when items run out." : `${itemName} has run out in the garage!`;
-        new Notification(title, {
-          body,
-          icon: "https://img.icons8.com/fluency/96/empty-box.png",
-          badge: "https://img.icons8.com/fluency/96/empty-box.png"
-        });
-      }
-    }
-
-    // === 7. PULL DOWN TO SYNC ENGINE ===
+    // === 7. PULL DOWN TO SYNC ===
     let touchStartY = 0;
     let currentPullDistance = 0;
     const PULL_THRESHOLD = 75;
     const pullEl = document.getElementById('pullIndicator');
 
     window.addEventListener('touchstart', (e) => {
-      if (window.scrollY === 0) {
-        touchStartY = e.touches[0].clientY;
-      } else {
-        touchStartY = 0;
-      }
+      touchStartY = window.scrollY === 0 ? e.touches[0].clientY : 0;
     }, { passive: true });
 
     window.addEventListener('touchmove', (e) => {
       if (!touchStartY) return;
-      const currentY = e.touches[0].clientY;
-      currentPullDistance = currentY - touchStartY;
-
+      currentPullDistance = e.touches[0].clientY - touchStartY;
       if (currentPullDistance > 20 && window.scrollY === 0) {
         pullEl.classList.add('visible');
-        if (currentPullDistance >= PULL_THRESHOLD) {
-          pullEl.innerText = "↑ Release to sync";
-        } else {
-          pullEl.innerText = "↓ Pull down to sync";
-        }
+        pullEl.innerText = currentPullDistance >= PULL_THRESHOLD ? "↑ Release to sync" : "↓ Pull down to sync";
       }
     }, { passive: true });
 
@@ -617,10 +751,8 @@
       if (currentPullDistance >= PULL_THRESHOLD && window.scrollY === 0) {
         pullEl.innerText = "🔄 Syncing...";
         if (navigator.vibrate) navigator.vibrate(40);
-
         await fetchCloudData();
         await silentFlushQueue();
-
         pullEl.innerText = "✓ Synced";
         setTimeout(() => {
           pullEl.classList.remove('visible');
@@ -634,8 +766,29 @@
       }
     });
 
-    // === 8. UI RENDER ENGINE ===
+    // === 8. NOTIFICATIONS & MODALS ===
+    function enableLockscreenAlerts() {
+      if (!('Notification' in window)) return alert('Notifications not supported on this browser.');
+      Notification.requestPermission().then(perm => {
+        if (perm === 'granted') {
+          updateBellVisibility();
+          showLocalNotification("Garage Alerts Enabled");
+        }
+      });
+    }
+
+    function showLocalNotification(itemName) {
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification(itemName === "Garage Alerts Enabled" ? "Garage Stock Active" : "Out of Stock ⚠️", {
+          body: itemName === "Garage Alerts Enabled" ? "You will receive alerts here when items run out." : `${itemName} has run out in the garage!`,
+          icon: "https://img.icons8.com/fluency/96/empty-box.png",
+          badge: "https://img.icons8.com/fluency/96/empty-box.png"
+        });
+      }
+    }
+
     function toggleAddModal(open) {
+      populateCategoryDropdown();
       document.getElementById('addModalOverlay').classList.toggle('open', open);
     }
 
@@ -644,6 +797,7 @@
       render();
     }
 
+    // === 9. MAIN RENDER ENGINE ===
     function render() {
       const grid = document.getElementById('bentoGrid');
       const filterBar = document.getElementById('categoryFilters');
@@ -665,11 +819,12 @@
         selBar.classList.remove('active');
       }
 
-      const categories = ["All", ...new Set(items.map(i => i.category))];
-      filterBar.innerHTML = categories.map(cat => {
+      // Filter chips with Manage button at the end
+      const allFilterCategories = ["All", ...categories];
+      filterBar.innerHTML = allFilterCategories.map(cat => {
         const count = cat === "All" ? items.length : items.filter(i => i.category === cat).length;
         return `<div class="chip ${currentFilter === cat ? 'active' : ''}" onclick="setFilter('${cat}')">${cat} (${count})</div>`;
-      }).join('');
+      }).join('') + `<div class="chip chip-manage" onclick="toggleCategoryModal(true)">⚙️ Categories</div>`;
 
       const filtered = items.map((item, idx) => ({ ...item, origIdx: idx }))
         .filter(i => currentFilter === "All" || i.category === currentFilter);
@@ -703,6 +858,20 @@
         `;
       }).join('');
     }
+
+    // Auto-refresh version detection
+    window.addEventListener('online', silentFlushQueue);
+    window.addEventListener('load', () => {
+      if (localStorage.getItem('app_version') !== APP_VERSION) {
+        localStorage.setItem('app_version', APP_VERSION);
+        if ('caches' in window) caches.keys().then(n => n.forEach(k => caches.delete(k)));
+        window.location.reload(true);
+        return;
+      }
+      render();
+      updateBellVisibility();
+      fetchCloudData();
+    });
   </script>
 </body>
 </html>
