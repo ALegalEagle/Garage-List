@@ -8,6 +8,11 @@
   <meta name="apple-mobile-web-app-title" content="Garage Stock" />
   <title>Garage Stock</title>
 
+  <!-- Prevent browser from caching outdated app versions -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+
   <!-- Shopping Trolley Icons & Web Manifest -->
   <link rel="icon" type="image/png" sizes="192x192" href="https://img.icons8.com/fluency/192/shopping-cart.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="https://img.icons8.com/fluency/192/shopping-cart.png" />
@@ -60,14 +65,40 @@
     body { background: var(--bg); color: var(--text); padding-bottom: 100px; transition: background 0.15s ease, color 0.15s ease; user-select: none; }
     .container { max-width: 540px; margin: 0 auto; padding: 16px; }
 
+    /* Pull-down to sync indicator */
+    .pull-indicator {
+      position: fixed;
+      top: -50px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 800;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+      z-index: 1000;
+      transition: top 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s ease;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .pull-indicator.visible {
+      top: 14px;
+      opacity: 1;
+    }
+
     /* Header Bar */
     header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
     .title-row { display: flex; align-items: center; gap: 8px; }
     .title-row h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
 
-    .sync-indicator { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: var(--synced-color); }
-    .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--synced-color); display: inline-block; }
-    .sync-indicator.pending .sync-dot { background: var(--low-border); animation: pulse 1s infinite; }
+    /* Sync Indicator (Green when synced, Red when pending/offline) */
+    .sync-indicator { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: var(--synced-color); transition: color 0.2s ease; }
+    .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--synced-color); display: inline-block; transition: background 0.2s ease; }
+    .sync-indicator.pending { color: var(--out-border) !important; }
+    .sync-indicator.pending .sync-dot { background: var(--out-border) !important; animation: pulse 1s infinite; }
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
     /* Header Controls */
@@ -161,6 +192,9 @@
   </style>
 </head>
 <body>
+  <!-- Pull Down to Sync Badge -->
+  <div class="pull-indicator" id="pullIndicator">↓ Pull down to sync</div>
+
   <div class="container">
     <header>
       <div class="title-row">
@@ -181,7 +215,7 @@
     </header>
     <div class="subtitle" id="summaryText">Loading garage inventory...</div>
 
-    <!-- Selection Bar -->
+    <!-- Multi-Select Action Bar -->
     <div class="selection-bar" id="selectionBar">
       <div class="sel-count" id="selectionCount">0 Selected</div>
       <div class="sel-actions">
@@ -249,7 +283,8 @@
   </div>
 
   <script>
-    // === 1. CONFIGURATION & STATE ===
+    // === 1. VERSION CONTROL & CONFIGURATION ===
+    const APP_VERSION = "1.0.2"; // Bump this number whenever you push a change
     const SCRIPT_URL = "PASTE_YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE";
 
     const defaultData = [
@@ -282,7 +317,7 @@
     let selectionMode = false;
     let selectedIndices = new Set();
 
-    // === 2. THEME & HEADER CONTROLS ===
+    // === 2. THEME & NOTIFICATION BELL VISIBILITY ===
     function setTheme(mode) {
       if (mode === 'dark') {
         document.body.classList.add('dark');
@@ -369,7 +404,7 @@
 
       if (!navigator.onLine) {
         indicator.classList.add('pending');
-        text.innerText = `${syncQueue.length} queued`;
+        text.innerText = 'Not Synced (Offline)';
         return;
       }
 
@@ -393,7 +428,7 @@
         text.innerText = 'Synced';
       } catch (err) {
         indicator.classList.add('pending');
-        text.innerText = `${syncQueue.length} queued`;
+        text.innerText = 'Not Synced';
       } finally {
         isSyncing = false;
       }
@@ -410,11 +445,12 @@
           render();
         }
       } catch (e) {}
-    const APP_VERSION = "1.0.1"; // Bump this number (e.g. 1.0.2) whenever you push a change
+    }
 
+    // === 4. LAUNCH & AUTO-REFRESH ===
     window.addEventListener('online', silentFlushQueue);
     window.addEventListener('load', () => {
-      // Check for a new deployment version
+      // Clear cache and auto-refresh pinned app if version changed
       if (localStorage.getItem('app_version') !== APP_VERSION) {
         localStorage.setItem('app_version', APP_VERSION);
         if ('caches' in window) {
@@ -431,7 +467,7 @@
       fetchCloudData();
     });
 
-    // === 4. SELECTION & DELETION ENGINE ===
+    // === 5. SELECTION & DELETION ENGINE ===
     function toggleSelectionMode() {
       if (selectionMode) {
         exitSelectionMode();
@@ -486,8 +522,8 @@
         return;
       }
       const count = selectedIndices.size;
-      document.getElementById('bulkDeleteTitle').innerText = `Delete ${count} Selected${count === 1 ? 'Item' : 'Items'}?`;
-      document.getElementById('confirmBulkDeleteBtn').innerText = `🗑️ Confirm Delete (${count}${count === 1 ? 'Item' : 'Items'})`;
+      document.getElementById('bulkDeleteTitle').innerText = `Delete ${count} Selected ${count === 1 ? 'Item' : 'Items'}?`;
+      document.getElementById('confirmBulkDeleteBtn').innerText = `🗑️ Confirm Delete (${count} ${count === 1 ? 'Item' : 'Items'})`;
 
       const listEl = document.getElementById('bulkListPreview');
       listEl.innerHTML = Array.from(selectedIndices).map(idx => {
@@ -522,7 +558,7 @@
       silentFlushQueue();
     }
 
-    // === 5. LOCKSCREEN NOTIFICATIONS ===
+    // === 6. LOCKSCREEN NOTIFICATIONS ===
     function enableLockscreenAlerts() {
       if (!('Notification' in window)) {
         alert('Notifications not supported on this browser.');
@@ -548,7 +584,57 @@
       }
     }
 
-    // === 6. UI RENDER ENGINE ===
+    // === 7. PULL DOWN TO SYNC ENGINE ===
+    let touchStartY = 0;
+    let currentPullDistance = 0;
+    const PULL_THRESHOLD = 75;
+    const pullEl = document.getElementById('pullIndicator');
+
+    window.addEventListener('touchstart', (e) => {
+      if (window.scrollY === 0) {
+        touchStartY = e.touches[0].clientY;
+      } else {
+        touchStartY = 0;
+      }
+    }, { passive: true });
+
+    window.addEventListener('touchmove', (e) => {
+      if (!touchStartY) return;
+      const currentY = e.touches[0].clientY;
+      currentPullDistance = currentY - touchStartY;
+
+      if (currentPullDistance > 20 && window.scrollY === 0) {
+        pullEl.classList.add('visible');
+        if (currentPullDistance >= PULL_THRESHOLD) {
+          pullEl.innerText = "↑ Release to sync";
+        } else {
+          pullEl.innerText = "↓ Pull down to sync";
+        }
+      }
+    }, { passive: true });
+
+    window.addEventListener('touchend', async () => {
+      if (currentPullDistance >= PULL_THRESHOLD && window.scrollY === 0) {
+        pullEl.innerText = "🔄 Syncing...";
+        if (navigator.vibrate) navigator.vibrate(40);
+
+        await fetchCloudData();
+        await silentFlushQueue();
+
+        pullEl.innerText = "✓ Synced";
+        setTimeout(() => {
+          pullEl.classList.remove('visible');
+          currentPullDistance = 0;
+          touchStartY = 0;
+        }, 700);
+      } else {
+        pullEl.classList.remove('visible');
+        currentPullDistance = 0;
+        touchStartY = 0;
+      }
+    });
+
+    // === 8. UI RENDER ENGINE ===
     function toggleAddModal(open) {
       document.getElementById('addModalOverlay').classList.toggle('open', open);
     }
