@@ -135,7 +135,6 @@
     .sel-btn-text { background: none; border: none; font-size: 12px; font-weight: 700; color: var(--text-muted); cursor: pointer; }
     .sel-btn-exit { background: var(--pill-bg); border: 1px solid var(--border); padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 700; cursor: pointer; color: var(--text); }
 
-    /* Interactive Bento Summary Widgets */
     .bento-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
     .stat-card { border-radius: 16px; padding: 14px 16px; border-width: 2px; border-style: solid; min-height: 80px; display: flex; flex-direction: column; justify-content: space-between; cursor: pointer; transition: transform 0.1s ease, box-shadow 0.15s ease; }
     .stat-card:active { transform: scale(0.97); }
@@ -152,12 +151,28 @@
 
     .filters { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 14px; scrollbar-width: none; }
     .filters::-webkit-scrollbar { display: none; }
-    .chip { padding: 6px 14px; border-radius: 16px; font-size: 12px; font-weight: 700; border: 1px solid var(--border); background: var(--card-bg); color: var(--text-muted); cursor: pointer; white-space: nowrap; }
+    .chip { padding: 6px 14px; border-radius: 16px; font-size: 12px; font-weight: 700; border: 1px solid var(--border); background: var(--card-bg); color: var(--text-muted); cursor: pointer; white-space: nowrap; transition: background 0.15s ease; }
     .chip.active { background: var(--fab-bg); color: var(--fab-text); border-color: var(--fab-bg); }
     .chip-manage { background: transparent; border-style: dashed; }
 
     .bento-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .bento-card { background: var(--card-bg); border-radius: 16px; padding: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; justify-content: space-between; min-height: 124px; transition: transform 0.1s ease, border-color 0.15s ease, opacity 0.2s ease; position: relative; }
+    .bento-card { 
+      background: var(--card-bg); 
+      border-radius: 16px; 
+      padding: 12px; 
+      border: 1px solid var(--border); 
+      display: flex; 
+      flex-direction: column; 
+      justify-content: space-between; 
+      min-height: 124px; 
+      position: relative; 
+      animation: cardSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes cardSlideIn {
+      0% { opacity: 0; transform: translateY(16px) scale(0.96); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
     .bento-card.is-out { border: 2.5px solid var(--out-border) !important; }
     .bento-card.is-low { border: 2px solid var(--low-border) !important; }
     .bento-card.is-selected { border: 3px solid var(--out-border) !important; background: var(--card-selected-bg) !important; }
@@ -273,6 +288,15 @@
 
     .cat-manage-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; }
     .cat-del-btn { background: none; border: none; color: var(--out-border); font-size: 16px; cursor: pointer; padding: 4px; }
+
+    /* Custom Category Delete Dialog (Overlay Level 100) */
+    .confirm-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 100; align-items: center; justify-content: center; padding: 20px; }
+    .confirm-overlay.open { display: flex; }
+    .confirm-box { background: var(--card-bg); width: 100%; max-width: 360px; border-radius: 24px; padding: 24px 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); text-align: center; animation: popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
+    @keyframes popIn { from { transform: scale(0.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .confirm-icon { font-size: 32px; margin-bottom: 12px; }
+    .confirm-title { font-size: 18px; font-weight: 800; margin-bottom: 8px; }
+    .confirm-desc { font-size: 13px; color: var(--text-muted); line-height: 1.4; margin-bottom: 20px; }
   </style>
 </head>
 <body>
@@ -305,7 +329,6 @@
       </div>
     </div>
 
-    <!-- Interactive Bento Summary Widgets -->
     <div class="bento-stats">
       <div class="stat-card out" id="statCardOut" onclick="toggleQuickFilter('out')">
         <div class="stat-label">OUT OF STOCK</div>
@@ -385,6 +408,17 @@
     </div>
   </div>
 
+  <!-- Custom Appealing Category Delete Sheet -->
+  <div class="confirm-overlay" id="catDeleteDialogOverlay" onclick="if(event.target===this) closeCategoryDeleteDialog()">
+    <div class="confirm-box">
+      <div class="confirm-icon">⚠️</div>
+      <div class="confirm-title">Are you sure you want to delete this?</div>
+      <div class="confirm-desc" id="catDeleteDialogDesc">This category will be permanently removed.</div>
+      <button class="btn-danger" id="confirmCatDeleteBtn" onclick="executeCategoryDelete()">Delete Category</button>
+      <button class="btn-cancel" onclick="closeCategoryDeleteDialog()">Cancel</button>
+    </div>
+  </div>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { 
@@ -401,7 +435,7 @@
       enableIndexedDbPersistence
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    const APP_VERSION = "3.6.0";
+    const APP_VERSION = "3.8.0";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAMznXG0OXHqMdfrmOGHK-g08TugsYfWw8",
@@ -450,11 +484,12 @@
     let items = [];
     let categories = defaultCategories;
     let currentFilter = "All";
-    let quickFilter = null; // Can be 'out', 'low', or null
+    let quickFilter = null; 
     let selectionMode = false;
     let selectedIds = new Set();
     let selectedModalCategory = "";
     let modalInitialQty = 1;
+    let pendingDeleteCategory = null;
 
     window.setTheme = function(mode) {
       if (mode === 'dark') {
@@ -700,7 +735,7 @@
               <span style="font-weight:700; font-size:14px;">${cat}</span>
               <span style="font-size:11px; color:var(--text-muted); margin-left:6px;">(${count} items)</span>
             </div>
-            <button class="cat-del-btn" onclick="removeCategory('${cat}')" title="Delete Category">✕</button>
+            <button class="cat-del-btn" onclick="openCategoryDeleteDialog('${cat}')" title="Delete Category">✕</button>
           </div>
         `;
       }).join('');
@@ -720,19 +755,41 @@
       }
     };
 
-    window.removeCategory = async function(cat) {
+    window.openCategoryDeleteDialog = function(cat) {
+      pendingDeleteCategory = cat;
       const count = items.filter((i) => i.category === cat).length;
+      const descEl = document.getElementById('catDeleteDialogDesc');
       if (count > 0) {
-        if (!confirm(`Move ${count} items in "${cat}" to "General" and delete this category?`)) return;
+        descEl.innerHTML = `Deleting <b>"${cat}"</b> will automatically move <b>${count} items</b> to <b>"General"</b>.`;
+      } else {
+        descEl.innerHTML = `Are you sure you want to delete the <b>"${cat}"</b> category?`;
+      }
+      document.getElementById('catDeleteDialogOverlay').classList.add('open');
+    };
+
+    window.closeCategoryDeleteDialog = function() {
+      pendingDeleteCategory = null;
+      document.getElementById('catDeleteDialogOverlay').classList.remove('open');
+    };
+
+    window.executeCategoryDelete = async function() {
+      if (!pendingDeleteCategory) return;
+      const cat = pendingDeleteCategory;
+      const count = items.filter((i) => i.category === cat).length;
+
+      if (count > 0) {
         const batch = writeBatch(db);
         items.filter((i) => i.category === cat).forEach((i) => {
           batch.update(doc(db, "garage_items", i.id), { category: "General" });
         });
         await batch.commit();
       }
+
       categories = categories.filter((c) => c !== cat);
       if (currentFilter === cat) currentFilter = "All";
       setDoc(metaDoc, { list: categories });
+
+      closeCategoryDeleteDialog();
       renderCategoryManageList();
       render();
     };
@@ -824,15 +881,15 @@
 
     window.setFilter = function(cat) {
       currentFilter = cat;
-      quickFilter = null; // Clear quick filter when selecting a category tab
+      quickFilter = null; 
       render();
     };
 
     window.toggleQuickFilter = function(type) {
       if (quickFilter === type) {
-        quickFilter = null; // Toggle off if already active
+        quickFilter = null; 
       } else {
-        quickFilter = type; // Set to 'out' or 'low'
+        quickFilter = type; 
       }
       render();
     };
@@ -852,7 +909,6 @@
       document.getElementById('lowCount').innerText = `${lowCount} items`;
       document.getElementById('summaryText').innerText = `${items.length} items total • ${outCount} empty • ${lowCount} low`;
 
-      // Highlight active summary card filter
       statCardOut.classList.toggle('active-filter-card', quickFilter === 'out');
       statCardLow.classList.toggle('active-filter-card', quickFilter === 'low');
 
@@ -870,7 +926,6 @@
         return `<div class="chip ${currentFilter === cat && !quickFilter ? 'active' : ''}" onclick="setFilter('${cat}')">${cat} (${count})</div>`;
       }).join('');
 
-      // Apply filtering logic
       let filtered = items.filter((i) => currentFilter === "All" || i.category === currentFilter);
       if (quickFilter === 'out') {
         filtered = filtered.filter(i => i.amount === 0);
