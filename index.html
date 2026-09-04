@@ -410,10 +410,22 @@
           render();
         }
       } catch (e) {}
-    }
+    const APP_VERSION = "1.0.1"; // Bump this number (e.g. 1.0.2) whenever you push a change
 
     window.addEventListener('online', silentFlushQueue);
     window.addEventListener('load', () => {
+      // Check for a new deployment version
+      if (localStorage.getItem('app_version') !== APP_VERSION) {
+        localStorage.setItem('app_version', APP_VERSION);
+        if ('caches' in window) {
+          caches.keys().then(names => {
+            names.forEach(name => caches.delete(name));
+          });
+        }
+        window.location.reload(true);
+        return;
+      }
+
       render();
       updateBellVisibility();
       fetchCloudData();
