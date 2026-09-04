@@ -180,47 +180,32 @@
 
     body.selection-active .stepper-btn { pointer-events: none; opacity: 0.2; }
 
+    /* Permanent Rounded Square Corner Floating Action Button */
     .fab-bottom {
       position: fixed;
       bottom: calc(env(safe-area-inset-bottom, 16px) + 16px);
-      left: 50%;
-      transform: translateX(-50%);
-      width: calc(100% - 32px);
-      max-width: 508px;
-      height: 52px;
+      right: 20px;
+      left: auto;
+      transform: none;
+      width: 56px;
+      height: 56px;
       background: var(--fab-bg);
       color: var(--fab-text);
       border: none;
       border-radius: 16px;
-      font-size: 15px;
+      font-size: 28px;
       font-weight: 800;
       cursor: pointer;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.3);
       display: flex;
       align-items: center;
       justify-content: center;
       z-index: 10;
-      transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), 
-                  height 0.25s cubic-bezier(0.4, 0, 0.2, 1), 
-                  border-radius 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-                  transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-                  left 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-                  right 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .fab-icon { font-size: 22px; line-height: 1; transition: font-size 0.2s ease; }
-    .fab-text { margin-left: 6px; white-space: nowrap; overflow: hidden; max-width: 150px; opacity: 1; transition: max-width 0.2s ease, opacity 0.2s ease, margin 0.2s ease; }
+    .fab-icon { font-size: 28px; line-height: 1; }
+    .fab-text { display: none; }
 
-    .fab-bottom.scrolled {
-      left: calc(100% - 76px);
-      transform: none;
-      width: 56px;
-      height: 56px;
-      border-radius: 50%;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-    }
-    .fab-bottom.scrolled .fab-icon { font-size: 28px; }
-    .fab-bottom.scrolled .fab-text { max-width: 0; opacity: 0; margin-left: 0; }
-
+    /* Bulk Delete Floating Bar (Centered at bottom during multi-select) */
     .bulk-delete-bar { 
       display: none; 
       position: fixed; 
@@ -316,9 +301,9 @@
     <div class="bento-grid" id="bentoGrid"></div>
   </div>
 
-  <button class="fab-bottom" id="fabAdd" onclick="toggleAddModal(true)">
+  <!-- Permanent Rounded Square Corner Floating Action Button -->
+  <button class="fab-bottom" id="fabAdd" onclick="toggleAddModal(true)" title="Add New Item">
     <span class="fab-icon">+</span>
-    <span class="fab-text">Add New Item</span>
   </button>
 
   <button class="bulk-delete-bar" id="bulkDeleteBar" onclick="openBulkDeleteSheet()">🗑️ Delete Selected Items</button>
@@ -384,7 +369,7 @@
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     // === 1. FIREBASE CONFIGURATION & INITIALIZATION ===
-    const APP_VERSION = "2.1.0";
+    const APP_VERSION = "2.3.0";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAMznXG0OXHqMdfrmOGHK-g08TugsYfWw8",
@@ -651,17 +636,7 @@
       render();
     };
 
-    // === 6. FLOATING ACTION BUTTON SCROLL ===
-    const fabBtn = document.getElementById('fabAdd');
-    window.addEventListener('scroll', () => {
-      if (window.scrollY > 30) {
-        fabBtn.classList.add('scrolled');
-      } else {
-        fabBtn.classList.remove('scrolled');
-      }
-    }, { passive: true });
-
-    // === 7. MULTI-SELECT & BULK DELETION ===
+    // === 6. MULTI-SELECT & BULK DELETION ===
     window.toggleSelectionMode = function() {
       if (selectionMode) exitSelectionMode();
       else enterSelectionMode();
@@ -727,7 +702,7 @@
       exitSelectionMode();
     };
 
-    // === 8. NOTIFICATIONS & MODALS ===
+    // === 7. NOTIFICATIONS & MODALS ===
     window.enableLockscreenAlerts = function() {
       if (!('Notification' in window)) return alert('Notifications not supported on this browser.');
       Notification.requestPermission().then((perm) => {
@@ -758,7 +733,7 @@
       render();
     };
 
-    // === 9. RENDER ENGINE ===
+    // === 8. RENDER ENGINE ===
     function render() {
       const grid = document.getElementById('bentoGrid');
       const filterBar = document.getElementById('categoryFilters');
