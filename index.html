@@ -71,7 +71,7 @@
       min-height: 100vh;
     }
 
-    /* Fixed iOS Safe-Area Insets */
+    /* Fixed Safe-Area Insets for Mobile Displays */
     .container { 
       max-width: 540px; 
       margin: 0 auto; 
@@ -403,7 +403,7 @@
 
   <script>
     // === 1. VERSION & CONFIGURATION ===
-    const APP_VERSION = "1.0.4"; // Incremented to trigger instant auto-refresh
+    const APP_VERSION = "1.0.5"; // Forces instant cache invalidation across all devices
     const SCRIPT_URL = "PASTE_YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE";
 
     const defaultData = [
@@ -439,7 +439,7 @@
     let selectionMode = false;
     let selectedIndices = new Set();
 
-    // === 2. THEME & HEADER CONTROLS ===
+    // === 2. THEME & NOTIFICATION CONTROLS ===
     function setTheme(mode) {
       if (mode === 'dark') {
         document.body.classList.add('dark');
@@ -531,61 +531,84 @@
       const statusBtn = document.getElementById('syncStatus');
       const text = document.getElementById('syncText');
 
-      if (syncQueue.length === 0) {
-        statusBtn.classList.remove('pending');
-        text.innerText = 'Synced';
-        return;
-      }
+      if (syncQueue.length === 0) return;
 
       if (!navigator.onLine) {
         statusBtn.classList.add('pending');
-        text.innerText = 'Not Synced';
+        text.innerText = 'Offline';
         return;
       }
 
-      if (isSyncing || SCRIPT_URL.includes("PASTE_YOUR")) return;
+      if (isSyncing || !SCRIPT_URL || SCRIPT_URL.includes("PASTE_YOUR")) {
+        if (!SCRIPT_URL || SCRIPT_URL.includes("PASTE_YOUR")) {
+          statusBtn.classList.add('pending');
+          text.innerText = 'No URL';
+        }
+        return;
+      }
 
       isSyncing = true;
-      statusBtn.classList.add('pending');
+      statusBtn.classList.add('syncing');
       text.innerText = 'Syncing...';
 
       try {
-        await fetch(SCRIPT_URL, {
+        const res = await fetch(SCRIPT_URL, {
           method: 'POST',
-          headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify(syncQueue),
-          mode: 'no-cors'
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(syncQueue)
         });
 
-        syncQueue = [];
-        saveLocally();
-        statusBtn.classList.remove('pending');
-        text.innerText = 'Synced';
+        const result = await res.json();
+        if (result && result.status === 'success') {
+          syncQueue = [];
+          saveLocally();
+          statusBtn.classList.remove('pending', 'syncing');
+          text.innerText = 'Synced';
+        } else {
+          throw new Error(result.message || 'Sync failed');
+        }
       } catch (err) {
+        console.error("Flush error:", err);
+        statusBtn.classList.remove('syncing');
         statusBtn.classList.add('pending');
-        text.innerText = 'Not Synced';
+        text.innerText = 'Sync Error';
       } finally {
         isSyncing = false;
       }
     }
 
     async function fetchCloudData() {
+      const statusBtn = document.getElementById('syncStatus');
+      const text = document.getElementById('syncText');
+
       if (!SCRIPT_URL || SCRIPT_URL.includes("PASTE_YOUR") || !navigator.onLine) return;
       try {
-        const res = await fetch(SCRIPT_URL + '?action=getItems');
+        statusBtn.classList.add('syncing');
+        text.innerText = 'Checking...';
+
+        const res = await fetch(SCRIPT_URL + '?action=getItems&_t=' + Date.now(), { cache: 'no-store' });
         const cloudData = await res.json();
-        if (Array.isArray(cloudData) && cloudData.length > 0 && syncQueue.length === 0) {
-          items = cloudData;
-          cloudData.forEach(i => {
-            if (i.category && !categories.includes(i.category)) categories.push(i.category);
-          });
-          saveLocally();
-          render();
+
+        if (Array.isArray(cloudData) && cloudData.length > 0) {
+          if (syncQueue.length === 0) {
+            items = cloudData;
+            cloudData.forEach(i => {
+              if (i.category && !categories.includes(i.category)) categories.push(i.category);
+            });
+            saveLocally();
+            render();
+          }
+          statusBtn.classList.remove('pending', 'syncing');
+          text.innerText = 'Synced';
         }
-      } catch (e) {}
+      } catch (e) {
+        console.error("Cloud fetch failed:", e);
+        statusBtn.classList.remove('syncing');
+        statusBtn.classList.add('pending');
+        text.innerText = 'Fetch Failed';
+      }
     }
 
-    // 1-Tap Manual Sync Function
     async function manualSync() {
       const statusBtn = document.getElementById('syncStatus');
       const text = document.getElementById('syncText');
@@ -594,25 +617,24 @@
       text.innerText = "Syncing...";
       if (navigator.vibrate) navigator.vibrate(30);
 
-      await fetchCloudData();
       await silentFlushQueue();
+      await fetchCloudData();
 
-      statusBtn.classList.remove('syncing');
-      text.innerText = "Synced";
       if (navigator.vibrate) navigator.vibrate(30);
     }
 
-    // Auto-sync on visibility change (unlocking phone / returning to app)
+    // Auto-sync when phone is unlocked or app opened
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
-        fetchCloudData();
         silentFlushQueue();
+        fetchCloudData();
       }
     });
     window.addEventListener('pageshow', () => {
-      fetchCloudData();
       silentFlushQueue();
+      fetchCloudData();
     });
+    window.addEventListener('online', silentFlushQueue);
 
     // === 4. CATEGORY MANAGEMENT ===
     function populateCategoryDropdown() {
@@ -860,8 +882,7 @@
       }).join('');
     }
 
-    // Auto-refresh version detection
-    window.addEventListener('online', silentFlushQueue);
+    // Auto-refresh on version change
     window.addEventListener('load', () => {
       if (localStorage.getItem('app_version') !== APP_VERSION) {
         localStorage.setItem('app_version', APP_VERSION);
