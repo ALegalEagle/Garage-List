@@ -1,7 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-<!DOCTYPE html>
-<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
@@ -10,13 +8,11 @@
   <meta name="apple-mobile-web-app-title" content="Garage Stock" />
   <title>Garage Stock</title>
 
-  <!-- Shopping Trolley Home Screen Icons (iOS & Android) -->
+  <!-- Shopping Trolley Icons & Web Manifest -->
   <link rel="icon" type="image/png" sizes="192x192" href="https://img.icons8.com/fluency/192/shopping-cart.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="https://img.icons8.com/fluency/192/shopping-cart.png" />
-
-  <!-- Self-contained Web Manifest with Shopping Trolley Logo -->
   <link rel="manifest" href='data:application/manifest+json,{"name":"Garage Stock","short_name":"GarageStock","start_url":".","display":"standalone","background_color":"#0f172a","theme_color":"#0f172a","icons":[{"src":"https://img.icons8.com/fluency/192/shopping-cart.png","sizes":"192x192","type":"image/png"},{"src":"https://img.icons8.com/fluency/512/shopping-cart.png","sizes":"512x512","type":"image/png"}]}' />
-  
+
   <style>
     :root {
       --bg: #fcfcfc;
@@ -74,15 +70,19 @@
     .sync-indicator.pending .sync-dot { background: var(--low-border); animation: pulse 1s infinite; }
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
+    /* Header Controls */
     .header-actions { display: flex; align-items: center; gap: 8px; }
-    .action-btn { background: var(--pill-bg); border: 1px solid var(--border); border-radius: 20px; padding: 6px 10px; font-size: 13px; cursor: pointer; color: var(--text); }
+    .action-btn { background: var(--pill-bg); border: 1px solid var(--border); border-radius: 20px; padding: 6px 10px; font-size: 13px; cursor: pointer; color: var(--text); transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; }
+    .action-btn.active-bin { background: var(--out-border); color: #ffffff; border-color: var(--out-border); }
+    #bellBtn.hidden { display: none; }
+
     .theme-switch { display: flex; background: var(--pill-bg); border-radius: 20px; padding: 2px; border: 1px solid var(--border); }
     .theme-btn { border: none; background: transparent; padding: 4px 8px; border-radius: 16px; font-size: 12px; cursor: pointer; color: var(--text-muted); }
     .theme-btn.active { background: var(--card-bg); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 
     .subtitle { font-size: 12px; color: var(--text-muted); margin-bottom: 14px; }
 
-    /* Select Mode Header Bar */
+    /* Multi-Select Header Bar */
     .selection-bar { display: none; justify-content: space-between; align-items: center; background: var(--card-bg); border: 1px solid var(--out-border); padding: 10px 14px; border-radius: 16px; margin-bottom: 14px; }
     .selection-bar.active { display: flex; }
     .sel-count { font-size: 13px; font-weight: 800; color: var(--out-border); }
@@ -90,7 +90,7 @@
     .sel-btn-text { background: none; border: none; font-size: 12px; font-weight: 700; color: var(--text-muted); cursor: pointer; }
     .sel-btn-exit { background: var(--pill-bg); border: 1px solid var(--border); padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 700; cursor: pointer; color: var(--text); }
 
-    /* Top Bento Widgets */
+    /* Bento Summary Widgets */
     .bento-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
     .stat-card { border-radius: 16px; padding: 16px; border-width: 2px; border-style: solid; min-height: 82px; display: flex; flex-direction: column; justify-content: space-between; }
     .stat-card.out { background: var(--out-bg); border-color: var(--out-border); }
@@ -106,14 +106,15 @@
     .chip { padding: 6px 14px; border-radius: 16px; font-size: 12px; font-weight: 700; border: 1px solid var(--border); background: var(--card-bg); color: var(--text-muted); cursor: pointer; white-space: nowrap; }
     .chip.active { background: var(--fab-bg); color: var(--fab-text); border-color: var(--fab-bg); }
 
-    /* Bento Grid */
+    /* Bento 2-Column Grid */
     .bento-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .bento-card { background: var(--card-bg); border-radius: 16px; padding: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; justify-content: space-between; min-height: 124px; transition: transform 0.1s ease, border-color 0.15s ease; position: relative; cursor: pointer; }
-    .bento-card:active { transform: scale(0.98); }
-    
+    .bento-card { background: var(--card-bg); border-radius: 16px; padding: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; justify-content: space-between; min-height: 124px; transition: transform 0.1s ease, border-color 0.15s ease; position: relative; }
     .bento-card.is-out { border: 2.5px solid var(--out-border) !important; }
     .bento-card.is-low { border: 2px solid var(--low-border) !important; }
     .bento-card.is-selected { border: 3px solid var(--out-border) !important; background: var(--card-selected-bg) !important; }
+
+    body.selection-active .bento-card { cursor: pointer; }
+    body.selection-active .bento-card:active { transform: scale(0.98); }
 
     .card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
     .category-chip { font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 6px; background: var(--pill-bg); color: var(--text-muted); text-transform: uppercase; }
@@ -121,7 +122,7 @@
     .badge-out { background: var(--out-badge); }
     .badge-low { background: var(--low-badge); }
 
-    /* Selection Circle */
+    /* Checkbox Circle in Selection Mode */
     .chk-circle { display: none; width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--text-muted); align-items: center; justify-content: center; font-size: 12px; font-weight: 800; }
     body.selection-active .chk-circle { display: flex; }
     body.selection-active .status-badge { display: none; }
@@ -139,7 +140,7 @@
 
     body.selection-active .stepper-btn { pointer-events: none; opacity: 0.2; }
 
-    /* Bottom Action Bars */
+    /* Action Buttons at Screen Bottom */
     .fab-bottom { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); width: calc(100% - 32px); max-width: 508px; background: var(--fab-bg); color: var(--fab-text); border: none; border-radius: 16px; padding: 14px; font-size: 15px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.15); text-align: center; z-index: 10; }
     .bulk-delete-bar { display: none; position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); width: calc(100% - 32px); max-width: 508px; background: var(--out-border); color: #fff; border: none; border-radius: 16px; padding: 15px; font-size: 15px; font-weight: 800; cursor: pointer; box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4); text-align: center; z-index: 10; }
     body.selection-active .fab-bottom { display: none; }
@@ -153,7 +154,6 @@
     .close-btn { background: transparent; border: none; font-size: 22px; cursor: pointer; color: var(--text-muted); }
     .input-field { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--bg); color: var(--text); margin-bottom: 12px; outline: none; }
 
-    /* Lower-Half Bulk Delete Sheet Details */
     .bulk-list-preview { max-height: 140px; overflow-y: auto; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; margin: 14px 0; }
     .bulk-item-line { font-size: 13px; font-weight: 600; padding: 4px 0; color: var(--out-border); }
     .btn-danger { width: 100%; padding: 15px; background: var(--out-border); color: white; border: none; border-radius: 14px; font-size: 15px; font-weight: 800; cursor: pointer; margin-bottom: 10px; }
@@ -171,7 +171,8 @@
         </div>
       </div>
       <div class="header-actions">
-        <button class="action-btn" onclick="enableLockscreenAlerts()" title="Enable Lock Screen Alerts">🔔</button>
+        <button class="action-btn" id="bellBtn" onclick="enableLockscreenAlerts()" title="Enable Lock Screen Alerts">🔔</button>
+        <button class="action-btn" id="binBtn" onclick="toggleSelectionMode()" title="Toggle Delete / Selection Mode">🗑️</button>
         <div class="theme-switch">
           <button class="theme-btn" id="btnLight" onclick="setTheme('light')">☀️</button>
           <button class="theme-btn" id="btnDark" onclick="setTheme('dark')">🌙</button>
@@ -180,7 +181,7 @@
     </header>
     <div class="subtitle" id="summaryText">Loading garage inventory...</div>
 
-    <!-- Multi-Select Action Bar -->
+    <!-- Selection Bar -->
     <div class="selection-bar" id="selectionBar">
       <div class="sel-count" id="selectionCount">0 Selected</div>
       <div class="sel-actions">
@@ -249,7 +250,7 @@
 
   <script>
     // === 1. CONFIGURATION & STATE ===
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyMwwjfzi1Y8AkpMnc6u2FrkjAtYWnqIE_FIWHnzWUqSVwSMr-pZ9UJdrgW_-Vr32c/exec";
+    const SCRIPT_URL = "PASTE_YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE";
 
     const defaultData = [
       { name: "Cheerios", amount: 0, category: "Cereal" },
@@ -280,10 +281,8 @@
 
     let selectionMode = false;
     let selectedIndices = new Set();
-    let longPressTimer = null;
-    let isLongPressTriggered = false;
 
-    // === 2. THEME CONTROLS ===
+    // === 2. THEME & HEADER CONTROLS ===
     function setTheme(mode) {
       if (mode === 'dark') {
         document.body.classList.add('dark');
@@ -298,6 +297,13 @@
     }
     const savedTheme = localStorage.getItem('garage_theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
     setTheme(savedTheme);
+
+    function updateBellVisibility() {
+      const bell = document.getElementById('bellBtn');
+      if ('Notification' in window && Notification.permission === 'granted') {
+        if (bell) bell.classList.add('hidden');
+      }
+    }
 
     // === 3. STORAGE & SILENT BACKGROUND SYNC ===
     function saveLocally() {
@@ -409,39 +415,24 @@
     window.addEventListener('online', silentFlushQueue);
     window.addEventListener('load', () => {
       render();
+      updateBellVisibility();
       fetchCloudData();
     });
 
-    // === 4. TAP & HOLD / MULTI-SELECT ENGINE ===
-    function handlePressStart(origIdx, e) {
-      if (selectionMode) return;
-      isLongPressTriggered = false;
-      longPressTimer = setTimeout(() => {
-        isLongPressTriggered = true;
-        enterSelectionMode(origIdx);
-        if (navigator.vibrate) navigator.vibrate(60);
-      }, 500);
-    }
-
-    function handlePressEnd() {
-      clearTimeout(longPressTimer);
-    }
-
-    function handleCardClick(origIdx) {
-      if (isLongPressTriggered) {
-        isLongPressTriggered = false;
-        return;
-      }
+    // === 4. SELECTION & DELETION ENGINE ===
+    function toggleSelectionMode() {
       if (selectionMode) {
-        toggleItemSelection(origIdx);
+        exitSelectionMode();
+      } else {
+        enterSelectionMode();
       }
     }
 
-    function enterSelectionMode(firstIdx) {
+    function enterSelectionMode() {
       selectionMode = true;
       selectedIndices.clear();
-      selectedIndices.add(firstIdx);
       document.body.classList.add('selection-active');
+      document.getElementById('binBtn').classList.add('active-bin');
       render();
     }
 
@@ -449,7 +440,14 @@
       selectionMode = false;
       selectedIndices.clear();
       document.body.classList.remove('selection-active');
+      document.getElementById('binBtn').classList.remove('active-bin');
       render();
+    }
+
+    function handleCardClick(origIdx) {
+      if (selectionMode) {
+        toggleItemSelection(origIdx);
+      }
     }
 
     function toggleItemSelection(idx) {
@@ -458,28 +456,26 @@
       } else {
         selectedIndices.add(idx);
       }
-      if (selectedIndices.size === 0) {
-        exitSelectionMode();
-      } else {
-        render();
-      }
+      render();
     }
 
     function toggleSelectAll() {
       if (selectedIndices.size === items.length) {
         selectedIndices.clear();
-        exitSelectionMode();
       } else {
         items.forEach((_, idx) => selectedIndices.add(idx));
-        render();
       }
+      render();
     }
 
     function openBulkDeleteSheet() {
-      if (selectedIndices.size === 0) return;
+      if (selectedIndices.size === 0) {
+        alert("Please tap to select at least one item to delete.");
+        return;
+      }
       const count = selectedIndices.size;
-      document.getElementById('bulkDeleteTitle').innerText = `Delete ${count} Selected ${count === 1 ? 'Item' : 'Items'}?`;
-      document.getElementById('confirmBulkDeleteBtn').innerText = `🗑️ Confirm Delete (${count} ${count === 1 ? 'Item' : 'Items'})`;
+      document.getElementById('bulkDeleteTitle').innerText = `Delete ${count} Selected${count === 1 ? 'Item' : 'Items'}?`;
+      document.getElementById('confirmBulkDeleteBtn').innerText = `🗑️ Confirm Delete (${count}${count === 1 ? 'Item' : 'Items'})`;
 
       const listEl = document.getElementById('bulkListPreview');
       listEl.innerHTML = Array.from(selectedIndices).map(idx => {
@@ -514,7 +510,7 @@
       silentFlushQueue();
     }
 
-    // === 5. NOTIFICATIONS & MODALS ===
+    // === 5. LOCKSCREEN NOTIFICATIONS ===
     function enableLockscreenAlerts() {
       if (!('Notification' in window)) {
         alert('Notifications not supported on this browser.');
@@ -522,6 +518,7 @@
       }
       Notification.requestPermission().then(perm => {
         if (perm === 'granted') {
+          updateBellVisibility();
           showLocalNotification("Garage Alerts Enabled");
         }
       });
@@ -539,6 +536,7 @@
       }
     }
 
+    // === 6. UI RENDER ENGINE ===
     function toggleAddModal(open) {
       document.getElementById('addModalOverlay').classList.toggle('open', open);
     }
@@ -548,7 +546,6 @@
       render();
     }
 
-    // === 6. UI RENDER ENGINE ===
     function render() {
       const grid = document.getElementById('bentoGrid');
       const filterBar = document.getElementById('categoryFilters');
@@ -590,13 +587,7 @@
                         (isLow ? '<span class="status-badge badge-low">LOW STOCK</span>' : '');
 
         return `
-          <div class="bento-card ${borderClass}" 
-               onmousedown="handlePressStart(${item.origIdx}, event)" 
-               onmouseup="handlePressEnd()" 
-               onmouseleave="handlePressEnd()" 
-               ontouchstart="handlePressStart(${item.origIdx}, event)" 
-               ontouchend="handlePressEnd()" 
-               onclick="handleCardClick(${item.origIdx})">
+          <div class="bento-card ${borderClass}" onclick="handleCardClick(${item.origIdx})">
             <div>
               <div class="card-top">
                 <span class="category-chip">${item.category.split(" ")[0]}</span>
