@@ -8,12 +8,10 @@
   <meta name="apple-mobile-web-app-title" content="Garage Stock" />
   <title>Garage Stock</title>
 
-  <!-- Prevent stale caching on home screen PWA -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
 
-  <!-- Shopping Trolley Icons & Web Manifest -->
   <link rel="icon" type="image/png" sizes="192x192" href="https://img.icons8.com/fluency/192/shopping-cart.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="https://img.icons8.com/fluency/192/shopping-cart.png" />
   <link rel="manifest" href='data:application/manifest+json,{"name":"Garage Stock","short_name":"GarageStock","start_url":".","display":"standalone","background_color":"#0f172a","theme_color":"#0f172a","icons":[{"src":"https://img.icons8.com/fluency/192/shopping-cart.png","sizes":"192x192","type":"image/png"},{"src":"https://img.icons8.com/fluency/512/shopping-cart.png","sizes":"512x512","type":"image/png"}]}' />
@@ -316,14 +314,12 @@
     <div class="bento-grid" id="bentoGrid"></div>
   </div>
 
-  <!-- Permanent Rounded Square Corner Floating Action Button -->
   <button class="fab-bottom" id="fabAdd" onclick="toggleAddModal(true)" title="Add New Item">
     +
   </button>
 
   <button class="bulk-delete-bar" id="bulkDeleteBar" onclick="openBulkDeleteSheet()">🗑️ Delete Selected Items</button>
 
-  <!-- Option 3: Full-Screen Focused Add Item Modal Canvas -->
   <div class="modal-overlay" id="addModalOverlay" onclick="if(event.target===this) toggleAddModal(false)">
     <div class="modal">
       <div class="modal-top-bar">
@@ -340,7 +336,7 @@
       <div class="form-group">
         <label class="form-label">Choose Category</label>
         <div class="modal-cat-grid" id="modalCatGrid"></div>
-        <input type="text" id="inlineNewCategory" class="input-field" style="display: none; margin-top: 8px;" placeholder="Type new category name..." />
+        <input type="text" id="inlineNewCategory" class="input-field" style="display: none; margin-top: 8px;" placeholder="Type new category name... (Press Return)" onkeydown="handleNewCategoryKeydown(event)" autocomplete="off" />
       </div>
 
       <div class="form-group">
@@ -354,7 +350,6 @@
     </div>
   </div>
 
-  <!-- Category Management Tray -->
   <div class="modal-overlay" id="categoryModalOverlay" onclick="if(event.target===this) toggleCategoryModal(false)">
     <div class="modal">
       <div class="modal-top-bar">
@@ -370,7 +365,6 @@
     </div>
   </div>
 
-  <!-- Bulk Delete Confirmation Tray -->
   <div class="modal-overlay" id="bulkDeleteOverlay" onclick="if(event.target===this) closeBulkDeleteSheet()">
     <div class="modal">
       <div style="text-align: center; margin-bottom: 12px;">
@@ -400,8 +394,7 @@
       enableIndexedDbPersistence
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // === 1. FIREBASE CONFIGURATION & INITIALIZATION ===
-    const APP_VERSION = "3.1.0";
+    const APP_VERSION = "3.2.0";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAMznXG0OXHqMdfrmOGHK-g08TugsYfWw8",
@@ -455,7 +448,6 @@
     let selectedModalCategory = "";
     let modalInitialQty = 1;
 
-    // === 2. THEME & NOTIFICATION CONTROLS ===
     window.setTheme = function(mode) {
       if (mode === 'dark') {
         document.body.classList.add('dark');
@@ -478,7 +470,6 @@
       }
     }
 
-    // === 3. REAL-TIME LISTENERS ===
     function initRealtimeDatabase() {
       onSnapshot(metaDoc, (snap) => {
         if (snap.exists() && Array.isArray(snap.data().list)) {
@@ -550,7 +541,6 @@
     window.addEventListener('online', () => updateSyncStatus(true));
     window.addEventListener('offline', () => updateSyncStatus(false));
 
-    // === 4. RAPID-TAP ATOMIC ENGINE & ADD ITEM ===
     window.updateStock = async function(id, delta, event) {
       if (event) event.stopPropagation();
       if (selectionMode) return;
@@ -571,6 +561,37 @@
       document.getElementById('modalQtyVal').innerText = modalInitialQty;
     };
 
+    // Smart Normalizer to prevent duplicates & match similar sounding / spaced words
+    function sanitizeCategoryName(rawInput) {
+      const cleaned = rawInput.trim().replace(/\s+/g, ' ').toLowerCase();
+      // Look for exact or very close matches in existing categories
+      const match = categories.find(c => c.trim().toLowerCase() === cleaned);
+      if (match) return match; // Reuse existing!
+
+      // Proper Title Case for brand new categories
+      return rawInput.trim().replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+    }
+
+    window.handleNewCategoryKeydown = function(event) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        const inlineInput = document.getElementById('inlineNewCategory');
+        const val = inlineInput.value.trim();
+        if (!val) return;
+
+        const resolvedCategory = sanitizeCategoryName(val);
+        if (!categories.includes(resolvedCategory)) {
+          categories.push(resolvedCategory);
+          setDoc(metaDoc, { list: categories });
+        }
+
+        selectedModalCategory = resolvedCategory;
+        inlineInput.value = '';
+        inlineInput.style.display = 'none';
+        renderModalCategoryPills();
+      }
+    };
+
     window.addNewItem = async function() {
       const nameInput = document.getElementById('newItemName');
       const name = nameInput.value.trim();
@@ -578,8 +599,9 @@
       const inlineInput = document.getElementById('inlineNewCategory');
       
       if (category === '__new__') {
-        category = inlineInput.value.trim();
-        if (!category) return alert('Please enter a category name');
+        const val = inlineInput.value.trim();
+        if (!val) return alert('Please enter a category name');
+        category = sanitizeCategoryName(val);
         if (!categories.includes(category)) {
           categories.push(category);
           setDoc(metaDoc, { list: categories });
@@ -602,7 +624,6 @@
       toggleAddModal(false);
     };
 
-    // === 5. CATEGORY MANAGEMENT & MODAL PILLS ===
     function renderModalCategoryPills() {
       const grid = document.getElementById('modalCatGrid');
       if (!selectedModalCategory && categories.length > 0) {
@@ -670,8 +691,9 @@
       const input = document.getElementById('newCatInput');
       const val = input.value.trim();
       if (!val) return;
-      if (!categories.includes(val)) {
-        categories.push(val);
+      const resolved = sanitizeCategoryName(val);
+      if (!categories.includes(resolved)) {
+        categories.push(resolved);
         setDoc(metaDoc, { list: categories });
         input.value = '';
         renderCategoryManageList();
@@ -696,7 +718,6 @@
       render();
     };
 
-    // === 6. MULTI-SELECT & BULK DELETION ===
     window.toggleSelectionMode = function() {
       if (selectionMode) exitSelectionMode();
       else enterSelectionMode();
@@ -762,7 +783,6 @@
       exitSelectionMode();
     };
 
-    // === 7. NOTIFICATIONS ===
     window.enableLockscreenAlerts = function() {
       if (!('Notification' in window)) return alert('Notifications not supported on this browser.');
       Notification.requestPermission().then((perm) => {
@@ -788,7 +808,6 @@
       render();
     };
 
-    // === 8. RENDER ENGINE ===
     function render() {
       const grid = document.getElementById('bentoGrid');
       const filterBar = document.getElementById('categoryFilters');
