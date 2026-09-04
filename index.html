@@ -18,6 +18,10 @@
   <link rel="apple-touch-icon" sizes="180x180" href="https://img.icons8.com/fluency/192/shopping-cart.png" />
   <link rel="manifest" href='data:application/manifest+json,{"name":"Garage Stock","short_name":"GarageStock","start_url":".","display":"standalone","background_color":"#0f172a","theme_color":"#0f172a","icons":[{"src":"https://img.icons8.com/fluency/192/shopping-cart.png","sizes":"192x192","type":"image/png"},{"src":"https://img.icons8.com/fluency/512/shopping-cart.png","sizes":"512x512","type":"image/png"}]}' />
 
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
   <style>
     :root {
       --bg: #fcfcfc;
@@ -71,7 +75,6 @@
       min-height: 100vh;
     }
 
-    /* Fixed Safe-Area Insets for Mobile Displays */
     .container { 
       max-width: 540px; 
       margin: 0 auto; 
@@ -81,12 +84,10 @@
       padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 95px);
     }
 
-    /* Header Bar */
     header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
     .title-row { display: flex; align-items: center; gap: 8px; }
     .title-row h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
 
-    /* Interactive 1-Tap Sync Button */
     .sync-pill {
       display: inline-flex;
       align-items: center;
@@ -98,13 +99,7 @@
       font-size: 11px;
       font-weight: 700;
       color: var(--synced-color);
-      cursor: pointer;
-      transition: transform 0.1s ease, color 0.2s ease, border-color 0.2s ease;
       outline: none;
-    }
-    .sync-pill:active {
-      transform: scale(0.94);
-      background: var(--border);
     }
     .sync-dot { 
       width: 7px; 
@@ -115,26 +110,16 @@
       transition: background 0.2s ease; 
     }
     
-    .sync-pill.pending { 
+    .sync-pill.offline { 
       color: var(--out-border) !important; 
       border-color: var(--out-border) !important;
     }
-    .sync-pill.pending .sync-dot { 
+    .sync-pill.offline .sync-dot { 
       background: var(--out-border) !important; 
       animation: pulse 1s infinite; 
     }
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
-    .sync-pill.syncing .sync-dot { display: none; }
-    .sync-pill.syncing::before {
-      content: "🔄";
-      display: inline-block;
-      font-size: 10px;
-      animation: spin 0.8s linear infinite;
-    }
-    @keyframes spin { 100% { transform: rotate(360deg); } }
-
-    /* Header Controls */
     .header-actions { display: flex; align-items: center; gap: 8px; }
     .action-btn { background: var(--pill-bg); border: 1px solid var(--border); border-radius: 20px; padding: 6px 10px; font-size: 13px; cursor: pointer; color: var(--text); transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; }
     .action-btn.active-bin { background: var(--out-border); color: #ffffff; border-color: var(--out-border); }
@@ -146,7 +131,6 @@
 
     .subtitle { font-size: 12px; color: var(--text-muted); margin-bottom: 14px; }
 
-    /* Multi-Select Header Bar */
     .selection-bar { display: none; justify-content: space-between; align-items: center; background: var(--card-bg); border: 1px solid var(--out-border); padding: 10px 14px; border-radius: 16px; margin-bottom: 14px; }
     .selection-bar.active { display: flex; }
     .sel-count { font-size: 13px; font-weight: 800; color: var(--out-border); }
@@ -154,7 +138,6 @@
     .sel-btn-text { background: none; border: none; font-size: 12px; font-weight: 700; color: var(--text-muted); cursor: pointer; }
     .sel-btn-exit { background: var(--pill-bg); border: 1px solid var(--border); padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 700; cursor: pointer; color: var(--text); }
 
-    /* Bento Summary Widgets */
     .bento-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
     .stat-card { border-radius: 16px; padding: 14px 16px; border-width: 2px; border-style: solid; min-height: 80px; display: flex; flex-direction: column; justify-content: space-between; }
     .stat-card.out { background: var(--out-bg); border-color: var(--out-border); }
@@ -164,14 +147,12 @@
     .stat-card.low .stat-label { color: var(--low-badge); }
     .stat-value { font-size: 24px; font-weight: 800; line-height: 1; margin-top: 4px; }
 
-    /* Filter Chips */
     .filters { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 14px; scrollbar-width: none; }
     .filters::-webkit-scrollbar { display: none; }
     .chip { padding: 6px 14px; border-radius: 16px; font-size: 12px; font-weight: 700; border: 1px solid var(--border); background: var(--card-bg); color: var(--text-muted); cursor: pointer; white-space: nowrap; }
     .chip.active { background: var(--fab-bg); color: var(--fab-text); border-color: var(--fab-bg); }
     .chip-manage { background: transparent; border-style: dashed; }
 
-    /* Bento Grid Cards */
     .bento-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .bento-card { background: var(--card-bg); border-radius: 16px; padding: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; justify-content: space-between; min-height: 124px; transition: transform 0.1s ease, border-color 0.15s ease; position: relative; }
     .bento-card.is-out { border: 2.5px solid var(--out-border) !important; }
@@ -194,7 +175,6 @@
 
     .card-title { font-size: 15px; font-weight: 700; line-height: 1.25; margin-bottom: 12px; word-break: break-word; }
 
-    /* Stepper */
     .stepper-pill { background: var(--stepper-bg); border-radius: 10px; display: flex; align-items: center; justify-content: space-between; padding: 4px 6px; height: 34px; border: 1px solid var(--border); }
     .stepper-btn { background: transparent; border: none; font-size: 18px; font-weight: 700; color: var(--text-muted); width: 28px; height: 28px; cursor: pointer; display: flex; align-items: center; justify-content: center; border-radius: 6px; }
     .stepper-btn:active { background: var(--border); }
@@ -204,7 +184,6 @@
 
     body.selection-active .stepper-btn { pointer-events: none; opacity: 0.2; }
 
-    /* Morphing Floating Action Button */
     .fab-bottom {
       position: fixed;
       bottom: calc(env(safe-area-inset-bottom, 16px) + 16px);
@@ -245,7 +224,6 @@
     .fab-bottom.scrolled .fab-icon { font-size: 28px; }
     .fab-bottom.scrolled .fab-text { max-width: 0; opacity: 0; margin-left: 0; }
 
-    /* Bulk Delete Floating Bar */
     .bulk-delete-bar { 
       display: none; 
       position: fixed; 
@@ -269,7 +247,6 @@
     body.selection-active .fab-bottom { display: none !important; }
     body.selection-active .bulk-delete-bar { display: block; }
 
-    /* Modals & Bottom Sheets */
     .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 99; align-items: flex-end; justify-content: center; }
     .modal-overlay.open { display: flex; }
     
@@ -303,10 +280,10 @@
     <header>
       <div class="title-row">
         <h1>Garage Stock</h1>
-        <button class="sync-pill" id="syncStatus" onclick="manualSync()" title="Tap to Sync">
+        <div class="sync-pill" id="syncStatus">
           <span class="sync-dot"></span>
-          <span id="syncText">Synced</span>
-        </button>
+          <span id="syncText">Live</span>
+        </div>
       </div>
       <div class="header-actions">
         <button class="action-btn" id="bellBtn" onclick="enableLockscreenAlerts()" title="Enable Lock Screen Alerts">🔔</button>
@@ -317,9 +294,8 @@
         </div>
       </div>
     </header>
-    <div class="subtitle" id="summaryText">Loading garage inventory...</div>
+    <div class="subtitle" id="summaryText">Connecting to real-time inventory...</div>
 
-    <!-- Multi-Select Action Bar -->
     <div class="selection-bar" id="selectionBar">
       <div class="sel-count" id="selectionCount">0 Selected</div>
       <div class="sel-actions">
@@ -328,7 +304,6 @@
       </div>
     </div>
 
-    <!-- Bento Top Summary Widgets -->
     <div class="bento-stats">
       <div class="stat-card out">
         <div class="stat-label">OUT OF STOCK</div>
@@ -340,14 +315,10 @@
       </div>
     </div>
 
-    <!-- Category Filter Pills -->
     <div class="filters" id="categoryFilters"></div>
-
-    <!-- Bento 2-Column Cards -->
     <div class="bento-grid" id="bentoGrid"></div>
   </div>
 
-  <!-- Morphing Floating Action Button -->
   <button class="fab-bottom" id="fabAdd" onclick="toggleAddModal(true)">
     <span class="fab-icon">+</span>
     <span class="fab-text">Add New Item</span>
@@ -355,7 +326,6 @@
 
   <button class="bulk-delete-bar" id="bulkDeleteBar" onclick="openBulkDeleteSheet()">🗑️ Delete Selected Items</button>
 
-  <!-- Add Item Modal -->
   <div class="modal-overlay" id="addModalOverlay" onclick="if(event.target===this) toggleAddModal(false)">
     <div class="modal">
       <div class="modal-header">
@@ -372,7 +342,6 @@
     </div>
   </div>
 
-  <!-- Category Management Tray -->
   <div class="modal-overlay" id="categoryModalOverlay" onclick="if(event.target===this) toggleCategoryModal(false)">
     <div class="modal">
       <div class="modal-header">
@@ -387,13 +356,12 @@
     </div>
   </div>
 
-  <!-- Bulk Delete Confirmation Tray -->
   <div class="modal-overlay" id="bulkDeleteOverlay" onclick="if(event.target===this) closeBulkDeleteSheet()">
     <div class="modal">
       <div style="text-align: center; margin-bottom: 12px;">
         <div style="font-size: 36px; margin-bottom: 8px;">🗑️</div>
         <h3 id="bulkDeleteTitle" style="font-size: 19px; font-weight: 800;">Delete Selected Items?</h3>
-        <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">These items will be permanently removed from your garage list and cloud spreadsheet.</p>
+        <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">These items will be permanently removed from your garage database across all devices.</p>
       </div>
       <div class="bulk-list-preview" id="bulkListPreview"></div>
       <button class="btn-danger" id="confirmBulkDeleteBtn" onclick="confirmBulkDelete()">Confirm Delete</button>
@@ -402,11 +370,29 @@
   </div>
 
   <script>
-    // === 1. VERSION & CONFIGURATION ===
-    const APP_VERSION = "1.0.5"; // Forces instant cache invalidation across all devices
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyMwwjfzi1Y8AkpMnc6u2FrkjAtYWnqIE_FIWHnzWUqSVwSMr-pZ9UJdrgW_-Vr32c/exec";
+    // === 1. FIREBASE CONFIGURATION & INITIALIZATION ===
+    const APP_VERSION = "2.0.0";
 
-    const defaultData = [
+    const firebaseConfig = {
+      apiKey: "PASTE_YOUR_API_KEY",
+      authDomain: "PASTE_YOUR_PROJECT_ID.firebaseapp.com",
+      projectId: "PASTE_YOUR_PROJECT_ID",
+      storageBucket: "PASTE_YOUR_PROJECT_ID.appspot.com",
+      messagingSenderId: "PASTE_YOUR_SENDER_ID",
+      appId: "PASTE_YOUR_APP_ID"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    db.enablePersistence({ synchronizeTabs: true }).catch(err => {
+      console.warn("Offline persistence notice:", err.code);
+    });
+
+    const itemsCol = db.collection("garage_items");
+    const metaDoc = db.collection("garage_meta").doc("categories");
+
+    const defaultSeedItems = [
       { name: "Cheerios", amount: 0, category: "Cereal" },
       { name: "Corn Flakes", amount: 1, category: "Cereal" },
       { name: "Crunchy Nuts", amount: 1, category: "Cereal" },
@@ -431,15 +417,13 @@
 
     const defaultCategories = ["Cereal", "Gluten Free Cereal's", "Cleaning", "Household", "Condiments", "Spreads", "Kitchenware"];
 
-    let items = JSON.parse(localStorage.getItem('garage_items')) || defaultData;
-    let categories = JSON.parse(localStorage.getItem('garage_categories')) || defaultCategories;
-    let syncQueue = JSON.parse(localStorage.getItem('garage_sync_queue')) || [];
+    let items = [];
+    let categories = defaultCategories;
     let currentFilter = "All";
 
     let selectionMode = false;
-    let selectedIndices = new Set();
+    let selectedIds = new Set();
 
-    // === 2. THEME & NOTIFICATION CONTROLS ===
     function setTheme(mode) {
       if (mode === 'dark') {
         document.body.classList.add('dark');
@@ -462,38 +446,93 @@
       }
     }
 
-    // === 3. STORAGE & SYNC ENGINE ===
-    function saveLocally() {
-      localStorage.setItem('garage_items', JSON.stringify(items));
-      localStorage.setItem('garage_categories', JSON.stringify(categories));
-      localStorage.setItem('garage_sync_queue', JSON.stringify(syncQueue));
+    function initRealtimeDatabase() {
+      metaDoc.onSnapshot(doc => {
+        if (doc.exists && Array.isArray(doc.data().list)) {
+          categories = doc.data().list;
+        } else {
+          metaDoc.set({ list: defaultCategories });
+        }
+        render();
+      });
+
+      itemsCol.onSnapshot(snapshot => {
+        if (snapshot.empty && !localStorage.getItem('garage_seeded')) {
+          seedDatabase();
+          return;
+        }
+
+        const loaded = [];
+        snapshot.forEach(doc => {
+          loaded.push({ id: doc.id, ...doc.data() });
+        });
+
+        loaded.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+        loaded.forEach(newItem => {
+          const oldItem = items.find(i => i.id === newItem.id);
+          if (oldItem && oldItem.amount > 0 && newItem.amount === 0) {
+            showLocalNotification(newItem.name);
+          }
+        });
+
+        items = loaded;
+        render();
+        updateSyncStatus(true);
+      }, err => {
+        console.error("Firebase sync error:", err);
+        updateSyncStatus(false);
+      });
     }
 
-    function updateStock(idx, delta, event) {
+    async function seedDatabase() {
+      localStorage.setItem('garage_seeded', 'true');
+      const batch = db.batch();
+      defaultSeedItems.forEach(item => {
+        const ref = itemsCol.doc();
+        batch.set(ref, {
+          name: item.name,
+          amount: item.amount,
+          category: item.category,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      });
+      await batch.commit();
+    }
+
+    function updateSyncStatus(isLive) {
+      const statusPill = document.getElementById('syncStatus');
+      const text = document.getElementById('syncText');
+      if (isLive && navigator.onLine) {
+        statusPill.classList.remove('offline');
+        text.innerText = "Live";
+      } else {
+        statusPill.classList.add('offline');
+        text.innerText = "Offline";
+      }
+    }
+
+    window.addEventListener('online', () => updateSyncStatus(true));
+    window.addEventListener('offline', () => updateSyncStatus(false));
+
+    function updateStock(id, delta, event) {
       if (event) event.stopPropagation();
       if (selectionMode) return;
 
-      const prev = items[idx].amount;
-      items[idx].amount = Math.max(0, items[idx].amount + delta);
+      const item = items.find(i => i.id === id);
+      if (!item) return;
 
-      if (prev > 0 && items[idx].amount === 0) {
-        showLocalNotification(items[idx].name);
-      }
+      if (item.amount <= 0 && delta < 0) return;
 
-      syncQueue.push({
-        action: 'updateStock',
-        name: items[idx].name,
-        amount: items[idx].amount,
-        timestamp: Date.now()
-      });
-
-      saveLocally();
-      render();
-      silentFlushQueue();
+      itemsCol.doc(id).update({
+        amount: firebase.firestore.FieldValue.increment(delta),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }).catch(err => console.error("Update failed:", err));
     }
 
-    function addNewItem() {
-      const name = document.getElementById('newItemName').value.trim();
+    async function addNewItem() {
+      const nameInput = document.getElementById('newItemName');
+      const name = nameInput.value.trim();
       let category = document.getElementById('newItemCategory').value;
       const inlineInput = document.getElementById('inlineNewCategory');
       
@@ -502,141 +541,26 @@
         if (!category) return alert('Please enter a category name');
         if (!categories.includes(category)) {
           categories.push(category);
+          metaDoc.set({ list: categories });
         }
       }
 
       const amount = parseInt(document.getElementById('newItemAmount').value) || 0;
       if (!name) return alert('Please enter an item name');
 
-      items.unshift({ name, category, amount });
-      syncQueue.push({
-        action: 'addItem',
+      await itemsCol.add({
         name,
         category,
         amount,
-        timestamp: Date.now()
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
 
-      document.getElementById('newItemName').value = '';
+      nameInput.value = '';
       inlineInput.value = '';
       inlineInput.style.display = 'none';
       toggleAddModal(false);
-      saveLocally();
-      render();
-      silentFlushQueue();
     }
 
-    let isSyncing = false;
-    async function silentFlushQueue() {
-      const statusBtn = document.getElementById('syncStatus');
-      const text = document.getElementById('syncText');
-
-      if (syncQueue.length === 0) return;
-
-      if (!navigator.onLine) {
-        statusBtn.classList.add('pending');
-        text.innerText = 'Offline';
-        return;
-      }
-
-      if (isSyncing || !SCRIPT_URL || SCRIPT_URL.includes("PASTE_YOUR")) {
-        if (!SCRIPT_URL || SCRIPT_URL.includes("PASTE_YOUR")) {
-          statusBtn.classList.add('pending');
-          text.innerText = 'No URL';
-        }
-        return;
-      }
-
-      isSyncing = true;
-      statusBtn.classList.add('syncing');
-      text.innerText = 'Syncing...';
-
-      try {
-        const res = await fetch(SCRIPT_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify(syncQueue)
-        });
-
-        const result = await res.json();
-        if (result && result.status === 'success') {
-          syncQueue = [];
-          saveLocally();
-          statusBtn.classList.remove('pending', 'syncing');
-          text.innerText = 'Synced';
-        } else {
-          throw new Error(result.message || 'Sync failed');
-        }
-      } catch (err) {
-        console.error("Flush error:", err);
-        statusBtn.classList.remove('syncing');
-        statusBtn.classList.add('pending');
-        text.innerText = 'Sync Error';
-      } finally {
-        isSyncing = false;
-      }
-    }
-
-    async function fetchCloudData() {
-      const statusBtn = document.getElementById('syncStatus');
-      const text = document.getElementById('syncText');
-
-      if (!SCRIPT_URL || SCRIPT_URL.includes("PASTE_YOUR") || !navigator.onLine) return;
-      try {
-        statusBtn.classList.add('syncing');
-        text.innerText = 'Checking...';
-
-        const res = await fetch(SCRIPT_URL + '?action=getItems&_t=' + Date.now(), { cache: 'no-store' });
-        const cloudData = await res.json();
-
-        if (Array.isArray(cloudData) && cloudData.length > 0) {
-          if (syncQueue.length === 0) {
-            items = cloudData;
-            cloudData.forEach(i => {
-              if (i.category && !categories.includes(i.category)) categories.push(i.category);
-            });
-            saveLocally();
-            render();
-          }
-          statusBtn.classList.remove('pending', 'syncing');
-          text.innerText = 'Synced';
-        }
-      } catch (e) {
-        console.error("Cloud fetch failed:", e);
-        statusBtn.classList.remove('syncing');
-        statusBtn.classList.add('pending');
-        text.innerText = 'Fetch Failed';
-      }
-    }
-
-    async function manualSync() {
-      const statusBtn = document.getElementById('syncStatus');
-      const text = document.getElementById('syncText');
-
-      statusBtn.classList.add('syncing');
-      text.innerText = "Syncing...";
-      if (navigator.vibrate) navigator.vibrate(30);
-
-      await silentFlushQueue();
-      await fetchCloudData();
-
-      if (navigator.vibrate) navigator.vibrate(30);
-    }
-
-    // Auto-sync when phone is unlocked or app opened
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') {
-        silentFlushQueue();
-        fetchCloudData();
-      }
-    });
-    window.addEventListener('pageshow', () => {
-      silentFlushQueue();
-      fetchCloudData();
-    });
-    window.addEventListener('online', silentFlushQueue);
-
-    // === 4. CATEGORY MANAGEMENT ===
     function populateCategoryDropdown() {
       const select = document.getElementById('newItemCategory');
       select.innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join('') +
@@ -685,33 +609,30 @@
       if (!val) return;
       if (!categories.includes(val)) {
         categories.push(val);
+        metaDoc.set({ list: categories });
         input.value = '';
-        saveLocally();
         renderCategoryManageList();
         render();
       }
     }
 
-    function removeCategory(cat) {
+    async function removeCategory(cat) {
       const count = items.filter(i => i.category === cat).length;
       if (count > 0) {
         if (!confirm(`Move ${count} items in "${cat}" to "General" and delete this category?`)) return;
-        items.forEach(i => {
-          if (i.category === cat) {
-            i.category = "General";
-            syncQueue.push({ action: 'addItem', name: i.name, category: "General", amount: i.amount, timestamp: Date.now() });
-          }
+        const batch = db.batch();
+        items.filter(i => i.category === cat).forEach(i => {
+          batch.update(itemsCol.doc(i.id), { category: "General" });
         });
+        await batch.commit();
       }
       categories = categories.filter(c => c !== cat);
       if (currentFilter === cat) currentFilter = "All";
-      saveLocally();
+      metaDoc.set({ list: categories });
       renderCategoryManageList();
       render();
-      silentFlushQueue();
     }
 
-    // === 5. MORPHING FAB SCROLL HANDLER ===
     const fabBtn = document.getElementById('fabAdd');
     window.addEventListener('scroll', () => {
       if (window.scrollY > 30) {
@@ -721,7 +642,6 @@
       }
     }, { passive: true });
 
-    // === 6. MULTI-SELECT & BULK DELETION ===
     function toggleSelectionMode() {
       if (selectionMode) exitSelectionMode();
       else enterSelectionMode();
@@ -729,7 +649,7 @@
 
     function enterSelectionMode() {
       selectionMode = true;
-      selectedIndices.clear();
+      selectedIds.clear();
       document.body.classList.add('selection-active');
       document.getElementById('binBtn').classList.add('active-bin');
       render();
@@ -737,35 +657,35 @@
 
     function exitSelectionMode() {
       selectionMode = false;
-      selectedIndices.clear();
+      selectedIds.clear();
       document.body.classList.remove('selection-active');
       document.getElementById('binBtn').classList.remove('active-bin');
       render();
     }
 
-    function handleCardClick(origIdx) {
+    function handleCardClick(id) {
       if (selectionMode) {
-        if (selectedIndices.has(origIdx)) selectedIndices.delete(origIdx);
-        else selectedIndices.add(origIdx);
+        if (selectedIds.has(id)) selectedIds.delete(id);
+        else selectedIds.add(id);
         render();
       }
     }
 
     function toggleSelectAll() {
-      if (selectedIndices.size === items.length) selectedIndices.clear();
-      else items.forEach((_, idx) => selectedIndices.add(idx));
+      if (selectedIds.size === items.length) selectedIds.clear();
+      else items.forEach(i => selectedIds.add(i.id));
       render();
     }
 
     function openBulkDeleteSheet() {
-      if (selectedIndices.size === 0) return alert("Tap to select at least one item to delete.");
-      const count = selectedIndices.size;
+      if (selectedIds.size === 0) return alert("Tap to select at least one item to delete.");
+      const count = selectedIds.size;
       document.getElementById('bulkDeleteTitle').innerText = `Delete ${count} Selected ${count === 1 ? 'Item' : 'Items'}?`;
       document.getElementById('confirmBulkDeleteBtn').innerText = `Confirm Delete (${count})`;
 
       const listEl = document.getElementById('bulkListPreview');
-      listEl.innerHTML = Array.from(selectedIndices).map(idx => {
-        const itm = items[idx];
+      listEl.innerHTML = Array.from(selectedIds).map(id => {
+        const itm = items.find(i => i.id === id);
         return `<div class="bulk-item-line">• ${itm.name} <span style="color:var(--text-muted); font-size:11px;">(${itm.category})</span></div>`;
       }).join('');
 
@@ -776,21 +696,17 @@
       document.getElementById('bulkDeleteOverlay').classList.remove('open');
     }
 
-    function confirmBulkDelete() {
-      const toDeleteNames = Array.from(selectedIndices).map(idx => items[idx].name);
-      toDeleteNames.forEach(name => {
-        syncQueue.push({ action: 'deleteItem', name, timestamp: Date.now() });
+    async function confirmBulkDelete() {
+      const batch = db.batch();
+      selectedIds.forEach(id => {
+        batch.delete(itemsCol.doc(id));
       });
+      await batch.commit();
 
-      items = items.filter((_, idx) => !selectedIndices.has(idx));
       closeBulkDeleteSheet();
       exitSelectionMode();
-      saveLocally();
-      render();
-      silentFlushQueue();
     }
 
-    // === 7. NOTIFICATIONS & MODALS ===
     function enableLockscreenAlerts() {
       if (!('Notification' in window)) return alert('Notifications not supported on this browser.');
       Notification.requestPermission().then(perm => {
@@ -821,7 +737,6 @@
       render();
     }
 
-    // === 8. MAIN RENDER ENGINE ===
     function render() {
       const grid = document.getElementById('bentoGrid');
       const filterBar = document.getElementById('categoryFilters');
@@ -837,8 +752,8 @@
 
       if (selectionMode) {
         selBar.classList.add('active');
-        selCount.innerText = `✓ ${selectedIndices.size} Selected`;
-        bulkDeleteBar.innerText = `🗑️ Delete ${selectedIndices.size} Selected Items`;
+        selCount.innerText = `✓ ${selectedIds.size} Selected`;
+        bulkDeleteBar.innerText = `🗑️ Delete ${selectedIds.size} Selected Items`;
       } else {
         selBar.classList.remove('active');
       }
@@ -849,13 +764,12 @@
         return `<div class="chip ${currentFilter === cat ? 'active' : ''}" onclick="setFilter('${cat}')">${cat} (${count})</div>`;
       }).join('') + `<div class="chip chip-manage" onclick="toggleCategoryModal(true)">⚙️ Categories</div>`;
 
-      const filtered = items.map((item, idx) => ({ ...item, origIdx: idx }))
-        .filter(i => currentFilter === "All" || i.category === currentFilter);
+      const filtered = items.filter(i => currentFilter === "All" || i.category === currentFilter);
 
       grid.innerHTML = filtered.map(item => {
         const isOut = item.amount === 0;
         const isLow = item.amount === 1;
-        const isSelected = selectedIndices.has(item.origIdx);
+        const isSelected = selectedIds.has(item.id);
 
         let borderClass = isSelected ? 'is-selected' : (isOut ? 'is-out' : (isLow ? 'is-low' : ''));
         let countClass = isOut ? 'count-out' : (isLow ? 'count-low' : '');
@@ -863,7 +777,7 @@
                         (isLow ? '<span class="status-badge badge-low">LOW STOCK</span>' : '');
 
         return `
-          <div class="bento-card ${borderClass}" onclick="handleCardClick(${item.origIdx})">
+          <div class="bento-card ${borderClass}" onclick="handleCardClick('${item.id}')">
             <div>
               <div class="card-top">
                 <span class="category-chip">${item.category.split(" ")[0]}</span>
@@ -873,16 +787,15 @@
               <div class="card-title">${item.name}</div>
             </div>
             <div class="stepper-pill" onclick="event.stopPropagation()">
-              <button class="stepper-btn" onclick="updateStock(${item.origIdx}, -1, event)">—</button>
+              <button class="stepper-btn" onclick="updateStock('${item.id}', -1, event)">—</button>
               <span class="stepper-count ${countClass}">${item.amount}</span>
-              <button class="stepper-btn" onclick="updateStock(${item.origIdx}, 1, event)">+</button>
+              <button class="stepper-btn" onclick="updateStock('${item.id}', 1, event)">+</button>
             </div>
           </div>
         `;
       }).join('');
     }
 
-    // Auto-refresh on version change
     window.addEventListener('load', () => {
       if (localStorage.getItem('app_version') !== APP_VERSION) {
         localStorage.setItem('app_version', APP_VERSION);
@@ -890,9 +803,8 @@
         window.location.reload(true);
         return;
       }
-      render();
       updateBellVisibility();
-      fetchCloudData();
+      initRealtimeDatabase();
     });
   </script>
 </body>
