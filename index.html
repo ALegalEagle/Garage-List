@@ -178,7 +178,6 @@
 
     body.selection-active .stepper-btn { pointer-events: none; opacity: 0.2; }
 
-    /* Permanent Rounded Square Corner Floating Action Button */
     .fab-bottom {
       position: fixed;
       bottom: calc(env(safe-area-inset-bottom, 16px) + 16px);
@@ -222,7 +221,6 @@
     body.selection-active .fab-bottom { display: none !important; }
     body.selection-active .bulk-delete-bar { display: block; }
 
-    /* Option 3 Full-Screen Focused Modal Canvas Styles */
     .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 99; align-items: flex-end; justify-content: center; }
     .modal-overlay.open { display: flex; }
     
@@ -249,13 +247,11 @@
     
     .input-field { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 14px; font-size: 15px; background: var(--bg); color: var(--text); outline: none; }
 
-    /* Interactive Category Selection Pills Inside Modal */
     .modal-cat-grid { display: flex; flex-wrap: wrap; gap: 8px; }
     .modal-cat-pill { padding: 8px 14px; border-radius: 14px; font-size: 13px; font-weight: 700; border: 1px solid var(--border); background: var(--bg); color: var(--text-muted); cursor: pointer; transition: all 0.15s ease; }
     .modal-cat-pill.active { background: var(--fab-bg); color: var(--fab-text); border-color: var(--fab-bg); }
     .modal-cat-pill.new-pill { border-style: dashed; color: var(--text); }
 
-    /* Tactile Initial Quantity Stepper Inside Modal */
     .modal-stepper { display: flex; align-items: center; justify-content: space-between; background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 8px 16px; }
     .modal-step-btn { background: var(--card-bg); border: 1px solid var(--border); font-size: 20px; font-weight: 800; color: var(--text); width: 40px; height: 40px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
     .modal-step-btn:active { background: var(--border); }
@@ -394,7 +390,7 @@
       enableIndexedDbPersistence
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    const APP_VERSION = "3.2.0";
+    const APP_VERSION = "3.3.0";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAMznXG0OXHqMdfrmOGHK-g08TugsYfWw8",
@@ -470,13 +466,30 @@
       }
     }
 
+    // App-wide smart sanitizer to deduplicate / normalize category names
+    function sanitizeCategoryName(rawInput) {
+      if (!rawInput) return "General";
+      const cleaned = rawInput.trim().replace(/\s+/g, ' ').toLowerCase();
+      const match = categories.find(c => c.trim().toLowerCase() === cleaned);
+      if (match) return match; 
+      return rawInput.trim().replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+    }
+
     function initRealtimeDatabase() {
       onSnapshot(metaDoc, (snap) => {
+        let loadedCats = defaultCategories;
         if (snap.exists() && Array.isArray(snap.data().list)) {
-          categories = snap.data().list;
+          // Clean up any existing duplicates in database array
+          const uniqueSet = new Set();
+          snap.data().list.forEach(c => {
+            const norm = sanitizeCategoryName(c);
+            uniqueSet.add(norm);
+          });
+          loadedCats = Array.from(uniqueSet);
         } else {
           setDoc(metaDoc, { list: defaultCategories });
         }
+        categories = loadedCats;
         render();
       }, (err) => {
         console.error("Categories snapshot error:", err);
@@ -490,7 +503,10 @@
 
         const loaded = [];
         snapshot.forEach((d) => {
-          loaded.push({ id: d.id, ...d.data() });
+          const data = d.data();
+          // App-wide normalization: ensure item's category matches an existing clean category name
+          const normalizedCat = sanitizeCategoryName(data.category);
+          loaded.push({ id: d.id, ...data, category: normalizedCat });
         });
 
         loaded.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
@@ -519,7 +535,7 @@
         batch.set(newDoc, {
           name: item.name,
           amount: item.amount,
-          category: item.category,
+          category: sanitizeCategoryName(item.category),
           updatedAt: serverTimestamp()
         });
       });
@@ -561,17 +577,6 @@
       document.getElementById('modalQtyVal').innerText = modalInitialQty;
     };
 
-    // Smart Normalizer to prevent duplicates & match similar sounding / spaced words
-    function sanitizeCategoryName(rawInput) {
-      const cleaned = rawInput.trim().replace(/\s+/g, ' ').toLowerCase();
-      // Look for exact or very close matches in existing categories
-      const match = categories.find(c => c.trim().toLowerCase() === cleaned);
-      if (match) return match; // Reuse existing!
-
-      // Proper Title Case for brand new categories
-      return rawInput.trim().replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
-    }
-
     window.handleNewCategoryKeydown = function(event) {
       if (event.key === 'Enter') {
         event.preventDefault();
@@ -606,6 +611,8 @@
           categories.push(category);
           setDoc(metaDoc, { list: categories });
         }
+      } else {
+        category = sanitizeCategoryName(category);
       }
 
       if (!name) return alert('Please enter an item name');
