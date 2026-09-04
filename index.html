@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Garage Stock" />
+  <title>Garage Stock</title>
+  <style>
+    :root {
+      --bg: #fcfcfc;
+      --card-bg: #ffffff;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --pill-bg: #f1f5f9;
+      --stepper-bg: #f8fafc;
+      --fab-bg: #0f172a;
+      --fab-text: #ffffff;
+
+      --out-border: #dc2626;
+      --out-badge: #ef4444;
+      --out-bg: #fff1f2;
+      --low-border: #f59e0b;
+      --low-badge: #f59e0b;
+      --low-bg: #fffbeb;
+      --synced-color: #10b981;
+      --card-selected-bg: #fef2f2;
+    }
+
+    body.dark {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --border: #334155;
+      --pill-bg: #334155;
+      --stepper-bg: #0f172a;
+      --fab-bg: #38bdf8;
+      --fab-text: #0f172a;
+
+      --out-border: #ef4444;
+      --out-badge: #ef4444;
+      --out-bg: #450a0a;
+      --low-border: #f59e0b;
+      --low-badge: #f59e0b;
+      --low-bg: #451a03;
+      --synced-color: #34d399;
+      --card-selected-bg: #272042;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { background: var(--bg); color: var(--text); padding-bottom: 100px; transition: background 0.15s ease, color 0.15s ease; user-select: none; }
+    .container { max-width: 540px; margin: 0 auto; padding: 16px; }
+
+    /* Header Bar */
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+    .title-row { display: flex; align-items: center; gap: 8px; }
+    .title-row h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+
+    .sync-indicator { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: var(--synced-color); }
+    .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--synced-color); display: inline-block; }
+    .sync-indicator.pending .sync-dot { background: var(--low-border); animation: pulse 1s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+    .header-actions { display: flex; align-items: center; gap: 8px; }
+    .action-btn { background: var(--pill-bg); border: 1px solid var(--border); border-radius: 20px; padding: 6px 10px; font-size: 13px; cursor: pointer; color: var(--text); }
+    .theme-switch { display: flex; background: var(--pill-bg); border-radius: 20px; padding: 2px; border: 1px solid var(--border); }
+    .theme-btn { border: none; background: transparent; padding: 4px 8px; border-radius: 16px; font-size: 12px; cursor: pointer; color: var(--text-muted); }
+    .theme-btn.active { background: var(--card-bg); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+    .subtitle { font-size: 12px; color: var(--text-muted); margin-bottom: 14px; }
+
+    /* Select Mode Header Bar */
+    .selection-bar { display: none; justify-content: space-between; align-items: center; background: var(--card-bg); border: 1px solid var(--out-border); padding: 10px 14px; border-radius: 16px; margin-bottom: 14px; }
+    .selection-bar.active { display: flex; }
+    .sel-count { font-size: 13px; font-weight: 800; color: var(--out-border); }
+    .sel-actions { display: flex; gap: 8px; align-items: center; }
+    .sel-btn-text { background: none; border: none; font-size: 12px; font-weight: 700; color: var(--text-muted); cursor: pointer; }
+    .sel-btn-exit { background: var(--pill-bg); border: 1px solid var(--border); padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 700; cursor: pointer; color: var(--text); }
+
+    /* Top Bento Widgets */
+    .bento-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+    .stat-card { border-radius: 16px; padding: 16px; border-width: 2px; border-style: solid; min-height: 82px; display: flex; flex-direction: column; justify-content: space-between; }
+    .stat-card.out { background: var(--out-bg); border-color: var(--out-border); }
+    .stat-card.low { background: var(--low-bg); border-color: var(--low-border); }
+    .stat-label { font-size: 10px; font-weight: 800; letter-spacing: 0.6px; }
+    .stat-card.out .stat-label { color: var(--out-badge); }
+    .stat-card.low .stat-label { color: var(--low-badge); }
+    .stat-value { font-size: 24px; font-weight: 800; line-height: 1; margin-top: 4px; }
+
+    /* Filter Chips */
+    .filters { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 14px; scrollbar-width: none; }
+    .filters::-webkit-scrollbar { display: none; }
+    .chip { padding: 6px 14px; border-radius: 16px; font-size: 12px; font-weight: 700; border: 1px solid var(--border); background: var(--card-bg); color: var(--text-muted); cursor: pointer; white-space: nowrap; }
+    .chip.active { background: var(--fab-bg); color: var(--fab-text); border-color: var(--fab-bg); }
+
+    /* Bento Grid */
+    .bento-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .bento-card { background: var(--card-bg); border-radius: 16px; padding: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; justify-content: space-between; min-height: 124px; transition: transform 0.1s ease, border-color 0.15s ease; position: relative; cursor: pointer; }
+    .bento-card:active { transform: scale(0.98); }
+    
+    .bento-card.is-out { border: 2.5px solid var(--out-border) !important; }
+    .bento-card.is-low { border: 2px solid var(--low-border) !important; }
+    .bento-card.is-selected { border: 3px solid var(--out-border) !important; background: var(--card-selected-bg) !important; }
+
+    .card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .category-chip { font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 6px; background: var(--pill-bg); color: var(--text-muted); text-transform: uppercase; }
+    .status-badge { font-size: 9px; font-weight: 800; padding: 3px 6px; border-radius: 5px; color: #fff; letter-spacing: 0.3px; }
+    .badge-out { background: var(--out-badge); }
+    .badge-low { background: var(--low-badge); }
+
+    /* Selection Circle */
+    .chk-circle { display: none; width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--text-muted); align-items: center; justify-content: center; font-size: 12px; font-weight: 800; }
+    body.selection-active .chk-circle { display: flex; }
+    body.selection-active .status-badge { display: none; }
+    .bento-card.is-selected .chk-circle { background: var(--out-border); border-color: var(--out-border); color: #fff; }
+
+    .card-title { font-size: 15px; font-weight: 700; line-height: 1.25; margin-bottom: 12px; word-break: break-word; }
+
+    /* Stepper */
+    .stepper-pill { background: var(--stepper-bg); border-radius: 10px; display: flex; align-items: center; justify-content: space-between; padding: 4px 6px; height: 34px; border: 1px solid var(--border); }
+    .stepper-btn { background: transparent; border: none; font-size: 18px; font-weight: 700; color: var(--text-muted); width: 28px; height: 28px; cursor: pointer; display: flex; align-items: center; justify-content: center; border-radius: 6px; }
+    .stepper-btn:active { background: var(--border); }
+    .stepper-count { font-size: 16px; font-weight: 800; }
+    .count-out { color: var(--out-border) !important; }
+    .count-low { color: var(--low-border) !important; }
+
+    body.selection-active .stepper-btn { pointer-events: none; opacity: 0.2; }
+
+    /* Bottom Action Bars */
+    .fab-bottom { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); width: calc(100% - 32px); max-width: 508px; background: var(--fab-bg); color: var(--fab-text); border: none; border-radius: 16px; padding: 14px; font-size: 15px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.15); text-align: center; z-index: 10; }
+    .bulk-delete-bar { display: none; position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); width: calc(100% - 32px); max-width: 508px; background: var(--out-border); color: #fff; border: none; border-radius: 16px; padding: 15px; font-size: 15px; font-weight: 800; cursor: pointer; box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4); text-align: center; z-index: 10; }
+    body.selection-active .fab-bottom { display: none; }
+    body.selection-active .bulk-delete-bar { display: block; }
+
+    /* Modals & Trays */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 99; align-items: flex-end; justify-content: center; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: var(--card-bg); width: 100%; max-width: 520px; border-radius: 24px 24px 0 0; padding: 24px 20px; box-shadow: 0 -4px 25px rgba(0,0,0,0.25); }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .close-btn { background: transparent; border: none; font-size: 22px; cursor: pointer; color: var(--text-muted); }
+    .input-field { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px; background: var(--bg); color: var(--text); margin-bottom: 12px; outline: none; }
+
+    /* Lower-Half Bulk Delete Sheet Details */
+    .bulk-list-preview { max-height: 140px; overflow-y: auto; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; margin: 14px 0; }
+    .bulk-item-line { font-size: 13px; font-weight: 600; padding: 4px 0; color: var(--out-border); }
+    .btn-danger { width: 100%; padding: 15px; background: var(--out-border); color: white; border: none; border-radius: 14px; font-size: 15px; font-weight: 800; cursor: pointer; margin-bottom: 10px; }
+    .btn-cancel { width: 100%; padding: 12px; background: var(--pill-bg); color: var(--text); border: 1px solid var(--border); border-radius: 14px; font-size: 14px; font-weight: 700; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="title-row">
+        <h1>Garage Stock</h1>
+        <div class="sync-indicator" id="syncStatus">
+          <span class="sync-dot"></span>
+          <span id="syncText">Synced</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="action-btn" onclick="enableLockscreenAlerts()" title="Enable Lock Screen Alerts">🔔</button>
+        <div class="theme-switch">
+          <button class="theme-btn" id="btnLight" onclick="setTheme('light')">☀️</button>
+          <button class="theme-btn" id="btnDark" onclick="setTheme('dark')">🌙</button>
+        </div>
+      </div>
+    </header>
+    <div class="subtitle" id="summaryText">Loading garage inventory...</div>
+
+    <!-- Multi-Select Action Bar -->
+    <div class="selection-bar" id="selectionBar">
+      <div class="sel-count" id="selectionCount">0 Selected</div>
+      <div class="sel-actions">
+        <button class="sel-btn-text" onclick="toggleSelectAll()">Select All</button>
+        <button class="sel-btn-exit" onclick="exitSelectionMode()">Exit</button>
+      </div>
+    </div>
+
+    <!-- Bento Top Alert Widgets -->
+    <div class="bento-stats">
+      <div class="stat-card out">
+        <div class="stat-label">OUT OF STOCK</div>
+        <div class="stat-value" id="outCount">0 items</div>
+      </div>
+      <div class="stat-card low">
+        <div class="stat-label">LOW STOCK</div>
+        <div class="stat-value" id="lowCount">0 items</div>
+      </div>
+    </div>
+
+    <!-- Category Filter Pills -->
+    <div class="filters" id="categoryFilters"></div>
+
+    <!-- Bento 2-Column Cards -->
+    <div class="bento-grid" id="bentoGrid"></div>
+  </div>
+
+  <button class="fab-bottom" onclick="toggleAddModal(true)">+ Add New Item</button>
+  <button class="bulk-delete-bar" id="bulkDeleteBar" onclick="openBulkDeleteSheet()">🗑️ Delete Selected Items</button>
+
+  <!-- Add Item Modal -->
+  <div class="modal-overlay" id="addModalOverlay" onclick="if(event.target===this) toggleAddModal(false)">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 style="font-size: 18px; font-weight: 800;">Add Garage Item</h3>
+        <button class="close-btn" onclick="toggleAddModal(false)">&times;</button>
+      </div>
+      <input type="text" id="newItemName" class="input-field" placeholder="Item Name (e.g. Pasta Sauce)" />
+      <select id="newItemCategory" class="input-field">
+        <option value="Cereal">Cereal</option>
+        <option value="Gluten Free Cereal's">Gluten Free Cereal's</option>
+        <option value="Cleaning">Cleaning</option>
+        <option value="Household">Household</option>
+        <option value="Condiments">Condiments</option>
+        <option value="Spreads">Spreads</option>
+        <option value="Kitchenware">Kitchenware</option>
+      </select>
+      <input type="number" id="newItemAmount" class="input-field" placeholder="Initial Quantity" value="1" min="0" />
+      <button class="fab-bottom" style="position: static; width: 100%; margin-top: 8px;" onclick="addNewItem()">Save Item</button>
+    </div>
+  </div>
+
+  <!-- Bulk Delete Confirmation Tray (Lower Half) -->
+  <div class="modal-overlay" id="bulkDeleteOverlay" onclick="if(event.target===this) closeBulkDeleteSheet()">
+    <div class="modal">
+      <div style="text-align: center; margin-bottom: 12px;">
+        <div style="font-size: 36px; margin-bottom: 8px;">🗑️</div>
+        <h3 id="bulkDeleteTitle" style="font-size: 19px; font-weight: 800;">Delete Selected Items?</h3>
+        <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">These items will be permanently removed from your garage list and cloud spreadsheet.</p>
+      </div>
+      <div class="bulk-list-preview" id="bulkListPreview"></div>
+      <button class="btn-danger" id="confirmBulkDeleteBtn" onclick="confirmBulkDelete()">Confirm Delete</button>
+      <button class="btn-cancel" onclick="closeBulkDeleteSheet()">Cancel (Keep All Items)</button>
+    </div>
+  </div>
+
+  <script>
+    // === 1. CONFIGURATION & STATE ===
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyMwwjfzi1Y8AkpMnc6u2FrkjAtYWnqIE_FIWHnzWUqSVwSMr-pZ9UJdrgW_-Vr32c/exec";
+
+    const defaultData = [
+      { name: "Cheerios", amount: 0, category: "Cereal" },
+      { name: "Corn Flakes", amount: 1, category: "Cereal" },
+      { name: "Crunchy Nuts", amount: 1, category: "Cereal" },
+      { name: "Frosted Flakes", amount: 2, category: "Cereal" },
+      { name: "Granola", amount: 2, category: "Cereal" },
+      { name: "Weetabix", amount: 2, category: "Cereal" },
+      { name: "Gluten Free Granola", amount: 2, category: "Gluten Free Cereal's" },
+      { name: "Gluten Free Porridge", amount: 2, category: "Gluten Free Cereal's" },
+      { name: "Gluten Free Weetabix", amount: 0, category: "Gluten Free Cereal's" },
+      { name: "Dettol Spray", amount: 4, category: "Cleaning" },
+      { name: "Dishwasher Cleaner", amount: 0, category: "Cleaning" },
+      { name: "Fairy Liquid", amount: 2, category: "Cleaning" },
+      { name: "Washing Machine Cleaner", amount: 1, category: "Cleaning" },
+      { name: "Tomato Ketchup", amount: 3, category: "Condiments" },
+      { name: "Kitchen Towel", amount: 8, category: "Household" },
+      { name: "Toilet Rolls", amount: 40, category: "Household" },
+      { name: "XL Kitchen Foil", amount: 1, category: "Kitchenware" },
+      { name: "Nutella", amount: 2, category: "Spreads" },
+      { name: "Dishwasher Tablets", amount: 1, category: "Household" },
+      { name: "Tea", amount: 2, category: "Condiments" }
+    ];
+
+    let items = JSON.parse(localStorage.getItem('garage_items')) || defaultData;
+    let syncQueue = JSON.parse(localStorage.getItem('garage_sync_queue')) || [];
+    let currentFilter = "All";
+
+    let selectionMode = false;
+    let selectedIndices = new Set();
+    let longPressTimer = null;
+    let isLongPressTriggered = false;
+
+    // === 2. THEME CONTROLS ===
+    function setTheme(mode) {
+      if (mode === 'dark') {
+        document.body.classList.add('dark');
+        document.getElementById('btnDark').classList.add('active');
+        document.getElementById('btnLight').classList.remove('active');
+      } else {
+        document.body.classList.remove('dark');
+        document.getElementById('btnLight').classList.add('active');
+        document.getElementById('btnDark').classList.remove('active');
+      }
+      localStorage.setItem('garage_theme', mode);
+    }
+    const savedTheme = localStorage.getItem('garage_theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    setTheme(savedTheme);
+
+    // === 3. STORAGE & SILENT BACKGROUND SYNC ===
+    function saveLocally() {
+      localStorage.setItem('garage_items', JSON.stringify(items));
+      localStorage.setItem('garage_sync_queue', JSON.stringify(syncQueue));
+    }
+
+    function updateStock(idx, delta, event) {
+      if (event) event.stopPropagation();
+      if (selectionMode) return;
+
+      const prev = items[idx].amount;
+      items[idx].amount = Math.max(0, items[idx].amount + delta);
+
+      if (prev > 0 && items[idx].amount === 0) {
+        showLocalNotification(items[idx].name);
+      }
+
+      syncQueue.push({
+        action: 'updateStock',
+        name: items[idx].name,
+        amount: items[idx].amount,
+        timestamp: Date.now()
+      });
+
+      saveLocally();
+      render();
+      silentFlushQueue();
+    }
+
+    function addNewItem() {
+      const name = document.getElementById('newItemName').value.trim();
+      const category = document.getElementById('newItemCategory').value;
+      const amount = parseInt(document.getElementById('newItemAmount').value) || 0;
+      if (!name) return;
+
+      items.unshift({ name, category, amount });
+      syncQueue.push({
+        action: 'addItem',
+        name,
+        category,
+        amount,
+        timestamp: Date.now()
+      });
+
+      document.getElementById('newItemName').value = '';
+      toggleAddModal(false);
+      saveLocally();
+      render();
+      silentFlushQueue();
+    }
+
+    let isSyncing = false;
+    async function silentFlushQueue() {
+      const indicator = document.getElementById('syncStatus');
+      const text = document.getElementById('syncText');
+
+      if (syncQueue.length === 0) {
+        indicator.classList.remove('pending');
+        text.innerText = 'Synced';
+        return;
+      }
+
+      if (!navigator.onLine) {
+        indicator.classList.add('pending');
+        text.innerText = `${syncQueue.length} queued`;
+        return;
+      }
+
+      if (isSyncing || SCRIPT_URL.includes("PASTE_YOUR")) return;
+
+      isSyncing = true;
+      indicator.classList.add('pending');
+      text.innerText = 'Syncing...';
+
+      try {
+        await fetch(SCRIPT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify(syncQueue),
+          mode: 'no-cors'
+        });
+
+        syncQueue = [];
+        saveLocally();
+        indicator.classList.remove('pending');
+        text.innerText = 'Synced';
+      } catch (err) {
+        indicator.classList.add('pending');
+        text.innerText = `${syncQueue.length} queued`;
+      } finally {
+        isSyncing = false;
+      }
+    }
+
+    async function fetchCloudData() {
+      if (!SCRIPT_URL || SCRIPT_URL.includes("PASTE_YOUR") || !navigator.onLine) return;
+      try {
+        const res = await fetch(SCRIPT_URL + '?action=getItems');
+        const cloudData = await res.json();
+        if (Array.isArray(cloudData) && cloudData.length > 0 && syncQueue.length === 0) {
+          items = cloudData;
+          saveLocally();
+          render();
+        }
+      } catch (e) {}
+    }
+
+    window.addEventListener('online', silentFlushQueue);
+    window.addEventListener('load', () => {
+      render();
+      fetchCloudData();
+    });
+
+    // === 4. TAP & HOLD / MULTI-SELECT ENGINE ===
+    function handlePressStart(origIdx, e) {
+      if (selectionMode) return;
+      isLongPressTriggered = false;
+      longPressTimer = setTimeout(() => {
+        isLongPressTriggered = true;
+        enterSelectionMode(origIdx);
+        if (navigator.vibrate) navigator.vibrate(60);
+      }, 500);
+    }
+
+    function handlePressEnd() {
+      clearTimeout(longPressTimer);
+    }
+
+    function handleCardClick(origIdx) {
+      if (isLongPressTriggered) {
+        isLongPressTriggered = false;
+        return;
+      }
+      if (selectionMode) {
+        toggleItemSelection(origIdx);
+      }
+    }
+
+    function enterSelectionMode(firstIdx) {
+      selectionMode = true;
+      selectedIndices.clear();
+      selectedIndices.add(firstIdx);
+      document.body.classList.add('selection-active');
+      render();
+    }
+
+    function exitSelectionMode() {
+      selectionMode = false;
+      selectedIndices.clear();
+      document.body.classList.remove('selection-active');
+      render();
+    }
+
+    function toggleItemSelection(idx) {
+      if (selectedIndices.has(idx)) {
+        selectedIndices.delete(idx);
+      } else {
+        selectedIndices.add(idx);
+      }
+      if (selectedIndices.size === 0) {
+        exitSelectionMode();
+      } else {
+        render();
+      }
+    }
+
+    function toggleSelectAll() {
+      if (selectedIndices.size === items.length) {
+        selectedIndices.clear();
+        exitSelectionMode();
+      } else {
+        items.forEach((_, idx) => selectedIndices.add(idx));
+        render();
+      }
+    }
+
+    function openBulkDeleteSheet() {
+      if (selectedIndices.size === 0) return;
+      const count = selectedIndices.size;
+      document.getElementById('bulkDeleteTitle').innerText = `Delete ${count} Selected ${count === 1 ? 'Item' : 'Items'}?`;
+      document.getElementById('confirmBulkDeleteBtn').innerText = `🗑️ Confirm Delete (${count} ${count === 1 ? 'Item' : 'Items'})`;
+
+      const listEl = document.getElementById('bulkListPreview');
+      listEl.innerHTML = Array.from(selectedIndices).map(idx => {
+        const itm = items[idx];
+        return `<div class="bulk-item-line">• ${itm.name} <span style="color:var(--text-muted); font-size:11px;">(${itm.category})</span></div>`;
+      }).join('');
+
+      document.getElementById('bulkDeleteOverlay').classList.add('open');
+    }
+
+    function closeBulkDeleteSheet() {
+      document.getElementById('bulkDeleteOverlay').classList.remove('open');
+    }
+
+    function confirmBulkDelete() {
+      const toDeleteNames = Array.from(selectedIndices).map(idx => items[idx].name);
+
+      toDeleteNames.forEach(name => {
+        syncQueue.push({
+          action: 'deleteItem',
+          name,
+          timestamp: Date.now()
+        });
+      });
+
+      items = items.filter((_, idx) => !selectedIndices.has(idx));
+
+      closeBulkDeleteSheet();
+      exitSelectionMode();
+      saveLocally();
+      render();
+      silentFlushQueue();
+    }
+
+    // === 5. NOTIFICATIONS & MODALS ===
+    function enableLockscreenAlerts() {
+      if (!('Notification' in window)) {
+        alert('Notifications not supported on this browser.');
+        return;
+      }
+      Notification.requestPermission().then(perm => {
+        if (perm === 'granted') {
+          showLocalNotification("Garage Alerts Enabled");
+        }
+      });
+    }
+
+    function showLocalNotification(itemName) {
+      if ('Notification' in window && Notification.permission === 'granted') {
+        const title = itemName === "Garage Alerts Enabled" ? "Garage Stock Active" : "Out of Stock ⚠️";
+        const body = itemName === "Garage Alerts Enabled" ? "You will receive alerts here when items run out." : `${itemName} has run out in the garage!`;
+        new Notification(title, {
+          body,
+          icon: "https://img.icons8.com/fluency/96/empty-box.png",
+          badge: "https://img.icons8.com/fluency/96/empty-box.png"
+        });
+      }
+    }
+
+    function toggleAddModal(open) {
+      document.getElementById('addModalOverlay').classList.toggle('open', open);
+    }
+
+    function setFilter(cat) {
+      currentFilter = cat;
+      render();
+    }
+
+    // === 6. UI RENDER ENGINE ===
+    function render() {
+      const grid = document.getElementById('bentoGrid');
+      const filterBar = document.getElementById('categoryFilters');
+      const selBar = document.getElementById('selectionBar');
+      const selCount = document.getElementById('selectionCount');
+      const bulkDeleteBar = document.getElementById('bulkDeleteBar');
+
+      const outCount = items.filter(i => i.amount === 0).length;
+      const lowCount = items.filter(i => i.amount === 1).length;
+      document.getElementById('outCount').innerText = `${outCount} items`;
+      document.getElementById('lowCount').innerText = `${lowCount} items`;
+      document.getElementById('summaryText').innerText = `${items.length} items total • ${outCount} empty • ${lowCount} low`;
+
+      if (selectionMode) {
+        selBar.classList.add('active');
+        selCount.innerText = `✓ ${selectedIndices.size} Selected`;
+        bulkDeleteBar.innerText = `🗑️ Delete ${selectedIndices.size} Selected Items`;
+      } else {
+        selBar.classList.remove('active');
+      }
+
+      const categories = ["All", ...new Set(items.map(i => i.category))];
+      filterBar.innerHTML = categories.map(cat => {
+        const count = cat === "All" ? items.length : items.filter(i => i.category === cat).length;
+        return `<div class="chip ${currentFilter === cat ? 'active' : ''}" onclick="setFilter('${cat}')">${cat} (${count})</div>`;
+      }).join('');
+
+      const filtered = items.map((item, idx) => ({ ...item, origIdx: idx }))
+        .filter(i => currentFilter === "All" || i.category === currentFilter);
+
+      grid.innerHTML = filtered.map(item => {
+        const isOut = item.amount === 0;
+        const isLow = item.amount === 1;
+        const isSelected = selectedIndices.has(item.origIdx);
+
+        let borderClass = isSelected ? 'is-selected' : (isOut ? 'is-out' : (isLow ? 'is-low' : ''));
+        let countClass = isOut ? 'count-out' : (isLow ? 'count-low' : '');
+        let badgeHtml = isOut ? '<span class="status-badge badge-out">OUT OF STOCK</span>' :
+                        (isLow ? '<span class="status-badge badge-low">LOW STOCK</span>' : '');
+
+        return `
+          <div class="bento-card ${borderClass}" 
+               onmousedown="handlePressStart(${item.origIdx}, event)" 
+               onmouseup="handlePressEnd()" 
+               onmouseleave="handlePressEnd()" 
+               ontouchstart="handlePressStart(${item.origIdx}, event)" 
+               ontouchend="handlePressEnd()" 
+               onclick="handleCardClick(${item.origIdx})">
+            <div>
+              <div class="card-top">
+                <span class="category-chip">${item.category.split(" ")[0]}</span>
+                ${badgeHtml}
+                <div class="chk-circle">${isSelected ? '✓' : ''}</div>
+              </div>
+              <div class="card-title">${item.name}</div>
+            </div>
+            <div class="stepper-pill" onclick="event.stopPropagation()">
+              <button class="stepper-btn" onclick="updateStock(${item.origIdx}, -1, event)">—</button>
+              <span class="stepper-count ${countClass}">${item.amount}</span>
+              <button class="stepper-btn" onclick="updateStock(${item.origIdx}, 1, event)">+</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+  </script>
+</body>
+</html>
