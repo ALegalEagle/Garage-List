@@ -18,10 +18,6 @@
   <link rel="apple-touch-icon" sizes="180x180" href="https://img.icons8.com/fluency/192/shopping-cart.png" />
   <link rel="manifest" href='data:application/manifest+json,{"name":"Garage Stock","short_name":"GarageStock","start_url":".","display":"standalone","background_color":"#0f172a","theme_color":"#0f172a","icons":[{"src":"https://img.icons8.com/fluency/192/shopping-cart.png","sizes":"192x192","type":"image/png"},{"src":"https://img.icons8.com/fluency/512/shopping-cart.png","sizes":"512x512","type":"image/png"}]}' />
 
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-
   <style>
     :root {
       --bg: #fcfcfc;
@@ -208,7 +204,8 @@
                   height 0.25s cubic-bezier(0.4, 0, 0.2, 1), 
                   border-radius 0.25s cubic-bezier(0.4, 0, 0.2, 1),
                   transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-                  left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+                  left 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                  right 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
     .fab-icon { font-size: 22px; line-height: 1; transition: font-size 0.2s ease; }
     .fab-text { margin-left: 6px; white-space: nowrap; overflow: hidden; max-width: 150px; opacity: 1; transition: max-width 0.2s ease, opacity 0.2s ease, margin 0.2s ease; }
@@ -282,7 +279,7 @@
         <h1>Garage Stock</h1>
         <div class="sync-pill" id="syncStatus">
           <span class="sync-dot"></span>
-          <span id="syncText">Live</span>
+          <span id="syncText">Connecting...</span>
         </div>
       </div>
       <div class="header-actions">
@@ -369,28 +366,44 @@
     </div>
   </div>
 
-  <script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { 
+      getFirestore, 
+      collection, 
+      doc, 
+      onSnapshot, 
+      setDoc, 
+      addDoc, 
+      updateDoc, 
+      deleteDoc, 
+      writeBatch, 
+      increment, 
+      serverTimestamp,
+      enableIndexedDbPersistence
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
     // === 1. FIREBASE CONFIGURATION & INITIALIZATION ===
-    const APP_VERSION = "2.0.0";
+    const APP_VERSION = "2.1.0";
 
     const firebaseConfig = {
-      apiKey: "PASTE_YOUR_API_KEY",
-      authDomain: "PASTE_YOUR_PROJECT_ID.firebaseapp.com",
-      projectId: "PASTE_YOUR_PROJECT_ID",
-      storageBucket: "PASTE_YOUR_PROJECT_ID.appspot.com",
-      messagingSenderId: "PASTE_YOUR_SENDER_ID",
-      appId: "PASTE_YOUR_APP_ID"
+      apiKey: "AIzaSyAMznXG0OXHqMdfrmOGHK-g08TugsYfWw8",
+      authDomain: "garage-stock-747e8.firebaseapp.com",
+      projectId: "garage-stock-747e8",
+      storageBucket: "garage-stock-747e8.firebasestorage.app",
+      messagingSenderId: "106742830571",
+      appId: "1:106742830571:web:dc208ba354f0d71516b5ae"
     };
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-    db.enablePersistence({ synchronizeTabs: true }).catch(err => {
-      console.warn("Offline persistence notice:", err.code);
+    enableIndexedDbPersistence(db).catch((err) => {
+      console.warn("Persistence notice:", err.code);
     });
 
-    const itemsCol = db.collection("garage_items");
-    const metaDoc = db.collection("garage_meta").doc("categories");
+    const itemsCol = collection(db, "garage_items");
+    const metaDoc = doc(db, "garage_meta", "categories");
 
     const defaultSeedItems = [
       { name: "Cheerios", amount: 0, category: "Cereal" },
@@ -420,11 +433,11 @@
     let items = [];
     let categories = defaultCategories;
     let currentFilter = "All";
-
     let selectionMode = false;
     let selectedIds = new Set();
 
-    function setTheme(mode) {
+    // === 2. THEME & NOTIFICATION CONTROLS ===
+    window.setTheme = function(mode) {
       if (mode === 'dark') {
         document.body.classList.add('dark');
         document.getElementById('btnDark').classList.add('active');
@@ -435,9 +448,9 @@
         document.getElementById('btnDark').classList.remove('active');
       }
       localStorage.setItem('garage_theme', mode);
-    }
+    };
     const savedTheme = localStorage.getItem('garage_theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-    setTheme(savedTheme);
+    window.setTheme(savedTheme);
 
     function updateBellVisibility() {
       const bell = document.getElementById('bellBtn');
@@ -446,31 +459,34 @@
       }
     }
 
+    // === 3. REAL-TIME LISTENERS ===
     function initRealtimeDatabase() {
-      metaDoc.onSnapshot(doc => {
-        if (doc.exists && Array.isArray(doc.data().list)) {
-          categories = doc.data().list;
+      onSnapshot(metaDoc, (snap) => {
+        if (snap.exists() && Array.isArray(snap.data().list)) {
+          categories = snap.data().list;
         } else {
-          metaDoc.set({ list: defaultCategories });
+          setDoc(metaDoc, { list: defaultCategories });
         }
         render();
+      }, (err) => {
+        console.error("Categories snapshot error:", err);
       });
 
-      itemsCol.onSnapshot(snapshot => {
-        if (snapshot.empty && !localStorage.getItem('garage_seeded')) {
+      onSnapshot(itemsCol, (snapshot) => {
+        if (snapshot.empty && !localStorage.getItem('garage_seeded_fb')) {
           seedDatabase();
           return;
         }
 
         const loaded = [];
-        snapshot.forEach(doc => {
-          loaded.push({ id: doc.id, ...doc.data() });
+        snapshot.forEach((d) => {
+          loaded.push({ id: d.id, ...d.data() });
         });
 
         loaded.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
-        loaded.forEach(newItem => {
-          const oldItem = items.find(i => i.id === newItem.id);
+        loaded.forEach((newItem) => {
+          const oldItem = items.find((i) => i.id === newItem.id);
           if (oldItem && oldItem.amount > 0 && newItem.amount === 0) {
             showLocalNotification(newItem.name);
           }
@@ -479,22 +495,22 @@
         items = loaded;
         render();
         updateSyncStatus(true);
-      }, err => {
-        console.error("Firebase sync error:", err);
+      }, (err) => {
+        console.error("Inventory snapshot error:", err);
         updateSyncStatus(false);
       });
     }
 
     async function seedDatabase() {
-      localStorage.setItem('garage_seeded', 'true');
-      const batch = db.batch();
-      defaultSeedItems.forEach(item => {
-        const ref = itemsCol.doc();
-        batch.set(ref, {
+      localStorage.setItem('garage_seeded_fb', 'true');
+      const batch = writeBatch(db);
+      defaultSeedItems.forEach((item) => {
+        const newDoc = doc(itemsCol);
+        batch.set(newDoc, {
           name: item.name,
           amount: item.amount,
           category: item.category,
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          updatedAt: serverTimestamp()
         });
       });
       await batch.commit();
@@ -515,22 +531,23 @@
     window.addEventListener('online', () => updateSyncStatus(true));
     window.addEventListener('offline', () => updateSyncStatus(false));
 
-    function updateStock(id, delta, event) {
+    // === 4. RAPID-TAP ATOMIC ENGINE ===
+    window.updateStock = async function(id, delta, event) {
       if (event) event.stopPropagation();
       if (selectionMode) return;
 
-      const item = items.find(i => i.id === id);
+      const item = items.find((i) => i.id === id);
       if (!item) return;
-
       if (item.amount <= 0 && delta < 0) return;
 
-      itemsCol.doc(id).update({
-        amount: firebase.firestore.FieldValue.increment(delta),
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      }).catch(err => console.error("Update failed:", err));
-    }
+      const itemRef = doc(db, "garage_items", id);
+      await updateDoc(itemRef, {
+        amount: increment(delta),
+        updatedAt: serverTimestamp()
+      }).catch((err) => console.error("Update failed:", err));
+    };
 
-    async function addNewItem() {
+    window.addNewItem = async function() {
       const nameInput = document.getElementById('newItemName');
       const name = nameInput.value.trim();
       let category = document.getElementById('newItemCategory').value;
@@ -541,33 +558,34 @@
         if (!category) return alert('Please enter a category name');
         if (!categories.includes(category)) {
           categories.push(category);
-          metaDoc.set({ list: categories });
+          setDoc(metaDoc, { list: categories });
         }
       }
 
       const amount = parseInt(document.getElementById('newItemAmount').value) || 0;
       if (!name) return alert('Please enter an item name');
 
-      await itemsCol.add({
+      await addDoc(itemsCol, {
         name,
         category,
         amount,
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        updatedAt: serverTimestamp()
       });
 
       nameInput.value = '';
       inlineInput.value = '';
       inlineInput.style.display = 'none';
       toggleAddModal(false);
-    }
+    };
 
+    // === 5. CATEGORY MANAGEMENT ===
     function populateCategoryDropdown() {
       const select = document.getElementById('newItemCategory');
-      select.innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join('') +
+      select.innerHTML = categories.map((c) => `<option value="${c}">${c}</option>`).join('') +
                          `<option value="__new__">+ Create New Category...</option>`;
     }
 
-    function handleCategorySelect(selectEl) {
+    window.handleCategorySelect = function(selectEl) {
       const inlineInput = document.getElementById('inlineNewCategory');
       if (selectEl.value === '__new__') {
         inlineInput.style.display = 'block';
@@ -575,9 +593,9 @@
       } else {
         inlineInput.style.display = 'none';
       }
-    }
+    };
 
-    function toggleCategoryModal(open) {
+    window.toggleCategoryModal = function(open) {
       const overlay = document.getElementById('categoryModalOverlay');
       if (open) {
         renderCategoryManageList();
@@ -585,12 +603,12 @@
       } else {
         overlay.classList.remove('open');
       }
-    }
+    };
 
     function renderCategoryManageList() {
       const listEl = document.getElementById('categoryManageList');
-      listEl.innerHTML = categories.map(cat => {
-        const count = items.filter(i => i.category === cat).length;
+      listEl.innerHTML = categories.map((cat) => {
+        const count = items.filter((i) => i.category === cat).length;
         return `
           <div class="cat-manage-row">
             <div>
@@ -603,36 +621,37 @@
       }).join('');
     }
 
-    function addNewCategoryFromModal() {
+    window.addNewCategoryFromModal = function() {
       const input = document.getElementById('newCatInput');
       const val = input.value.trim();
       if (!val) return;
       if (!categories.includes(val)) {
         categories.push(val);
-        metaDoc.set({ list: categories });
+        setDoc(metaDoc, { list: categories });
         input.value = '';
         renderCategoryManageList();
         render();
       }
-    }
+    };
 
-    async function removeCategory(cat) {
-      const count = items.filter(i => i.category === cat).length;
+    window.removeCategory = async function(cat) {
+      const count = items.filter((i) => i.category === cat).length;
       if (count > 0) {
         if (!confirm(`Move ${count} items in "${cat}" to "General" and delete this category?`)) return;
-        const batch = db.batch();
-        items.filter(i => i.category === cat).forEach(i => {
-          batch.update(itemsCol.doc(i.id), { category: "General" });
+        const batch = writeBatch(db);
+        items.filter((i) => i.category === cat).forEach((i) => {
+          batch.update(doc(db, "garage_items", i.id), { category: "General" });
         });
         await batch.commit();
       }
-      categories = categories.filter(c => c !== cat);
+      categories = categories.filter((c) => c !== cat);
       if (currentFilter === cat) currentFilter = "All";
-      metaDoc.set({ list: categories });
+      setDoc(metaDoc, { list: categories });
       renderCategoryManageList();
       render();
-    }
+    };
 
+    // === 6. FLOATING ACTION BUTTON SCROLL ===
     const fabBtn = document.getElementById('fabAdd');
     window.addEventListener('scroll', () => {
       if (window.scrollY > 30) {
@@ -642,10 +661,11 @@
       }
     }, { passive: true });
 
-    function toggleSelectionMode() {
+    // === 7. MULTI-SELECT & BULK DELETION ===
+    window.toggleSelectionMode = function() {
       if (selectionMode) exitSelectionMode();
       else enterSelectionMode();
-    }
+    };
 
     function enterSelectionMode() {
       selectionMode = true;
@@ -655,67 +675,68 @@
       render();
     }
 
-    function exitSelectionMode() {
+    window.exitSelectionMode = function() {
       selectionMode = false;
       selectedIds.clear();
       document.body.classList.remove('selection-active');
       document.getElementById('binBtn').classList.remove('active-bin');
       render();
-    }
+    };
 
-    function handleCardClick(id) {
+    window.handleCardClick = function(id) {
       if (selectionMode) {
         if (selectedIds.has(id)) selectedIds.delete(id);
         else selectedIds.add(id);
         render();
       }
-    }
+    };
 
-    function toggleSelectAll() {
+    window.toggleSelectAll = function() {
       if (selectedIds.size === items.length) selectedIds.clear();
-      else items.forEach(i => selectedIds.add(i.id));
+      else items.forEach((i) => selectedIds.add(i.id));
       render();
-    }
+    };
 
-    function openBulkDeleteSheet() {
+    window.openBulkDeleteSheet = function() {
       if (selectedIds.size === 0) return alert("Tap to select at least one item to delete.");
       const count = selectedIds.size;
       document.getElementById('bulkDeleteTitle').innerText = `Delete ${count} Selected ${count === 1 ? 'Item' : 'Items'}?`;
       document.getElementById('confirmBulkDeleteBtn').innerText = `Confirm Delete (${count})`;
 
       const listEl = document.getElementById('bulkListPreview');
-      listEl.innerHTML = Array.from(selectedIds).map(id => {
-        const itm = items.find(i => i.id === id);
-        return `<div class="bulk-item-line">• ${itm.name} <span style="color:var(--text-muted); font-size:11px;">(${itm.category})</span></div>`;
+      listEl.innerHTML = Array.from(selectedIds).map((id) => {
+        const itm = items.find((i) => i.id === id);
+        return `<div class="bulk-item-line">• ${itm ? itm.name : ''} <span style="color:var(--text-muted); font-size:11px;">(${itm ? itm.category : ''})</span></div>`;
       }).join('');
 
       document.getElementById('bulkDeleteOverlay').classList.add('open');
-    }
+    };
 
-    function closeBulkDeleteSheet() {
+    window.closeBulkDeleteSheet = function() {
       document.getElementById('bulkDeleteOverlay').classList.remove('open');
-    }
+    };
 
-    async function confirmBulkDelete() {
-      const batch = db.batch();
-      selectedIds.forEach(id => {
-        batch.delete(itemsCol.doc(id));
+    window.confirmBulkDelete = async function() {
+      const batch = writeBatch(db);
+      selectedIds.forEach((id) => {
+        batch.delete(doc(db, "garage_items", id));
       });
       await batch.commit();
 
       closeBulkDeleteSheet();
       exitSelectionMode();
-    }
+    };
 
-    function enableLockscreenAlerts() {
+    // === 8. NOTIFICATIONS & MODALS ===
+    window.enableLockscreenAlerts = function() {
       if (!('Notification' in window)) return alert('Notifications not supported on this browser.');
-      Notification.requestPermission().then(perm => {
+      Notification.requestPermission().then((perm) => {
         if (perm === 'granted') {
           updateBellVisibility();
           showLocalNotification("Garage Alerts Enabled");
         }
       });
-    }
+    };
 
     function showLocalNotification(itemName) {
       if ('Notification' in window && Notification.permission === 'granted') {
@@ -727,16 +748,17 @@
       }
     }
 
-    function toggleAddModal(open) {
+    window.toggleAddModal = function(open) {
       populateCategoryDropdown();
       document.getElementById('addModalOverlay').classList.toggle('open', open);
-    }
+    };
 
-    function setFilter(cat) {
+    window.setFilter = function(cat) {
       currentFilter = cat;
       render();
-    }
+    };
 
+    // === 9. RENDER ENGINE ===
     function render() {
       const grid = document.getElementById('bentoGrid');
       const filterBar = document.getElementById('categoryFilters');
@@ -744,8 +766,8 @@
       const selCount = document.getElementById('selectionCount');
       const bulkDeleteBar = document.getElementById('bulkDeleteBar');
 
-      const outCount = items.filter(i => i.amount === 0).length;
-      const lowCount = items.filter(i => i.amount === 1).length;
+      const outCount = items.filter((i) => i.amount === 0).length;
+      const lowCount = items.filter((i) => i.amount === 1).length;
       document.getElementById('outCount').innerText = `${outCount} items`;
       document.getElementById('lowCount').innerText = `${lowCount} items`;
       document.getElementById('summaryText').innerText = `${items.length} items total • ${outCount} empty • ${lowCount} low`;
@@ -759,14 +781,14 @@
       }
 
       const allFilterCategories = ["All", ...categories];
-      filterBar.innerHTML = allFilterCategories.map(cat => {
-        const count = cat === "All" ? items.length : items.filter(i => i.category === cat).length;
+      filterBar.innerHTML = allFilterCategories.map((cat) => {
+        const count = cat === "All" ? items.length : items.filter((i) => i.category === cat).length;
         return `<div class="chip ${currentFilter === cat ? 'active' : ''}" onclick="setFilter('${cat}')">${cat} (${count})</div>`;
       }).join('') + `<div class="chip chip-manage" onclick="toggleCategoryModal(true)">⚙️ Categories</div>`;
 
-      const filtered = items.filter(i => currentFilter === "All" || i.category === currentFilter);
+      const filtered = items.filter((i) => currentFilter === "All" || i.category === currentFilter);
 
-      grid.innerHTML = filtered.map(item => {
+      grid.innerHTML = filtered.map((item) => {
         const isOut = item.amount === 0;
         const isLow = item.amount === 1;
         const isSelected = selectedIds.has(item.id);
@@ -780,7 +802,7 @@
           <div class="bento-card ${borderClass}" onclick="handleCardClick('${item.id}')">
             <div>
               <div class="card-top">
-                <span class="category-chip">${item.category.split(" ")[0]}</span>
+                <span class="category-chip">${item.category ? item.category.split(" ")[0] : 'ITEM'}</span>
                 ${badgeHtml}
                 <div class="chk-circle">${isSelected ? '✓' : ''}</div>
               </div>
@@ -796,10 +818,11 @@
       }).join('');
     }
 
+    // Auto-refresh on version change & initiate real-time socket
     window.addEventListener('load', () => {
       if (localStorage.getItem('app_version') !== APP_VERSION) {
         localStorage.setItem('app_version', APP_VERSION);
-        if ('caches' in window) caches.keys().then(n => n.forEach(k => caches.delete(k)));
+        if ('caches' in window) caches.keys().then((n) => n.forEach((k) => caches.delete(k)));
         window.location.reload(true);
         return;
       }
