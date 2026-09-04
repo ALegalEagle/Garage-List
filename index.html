@@ -117,7 +117,10 @@
     .header-actions { display: flex; align-items: center; gap: 8px; }
     .action-btn { background: var(--pill-bg); border: 1px solid var(--border); border-radius: 20px; padding: 6px 10px; font-size: 13px; cursor: pointer; color: var(--text); transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; }
     .action-btn.active-bin { background: var(--out-border); color: #ffffff; border-color: var(--out-border); }
+    
     #bellBtn.hidden { display: none; }
+    #headerCogBtn { display: none; }
+    body.notifications-active #headerCogBtn { display: flex; }
 
     .theme-switch { display: flex; background: var(--pill-bg); border-radius: 20px; padding: 2px; border: 1px solid var(--border); }
     .theme-btn { border: none; background: transparent; padding: 4px 8px; border-radius: 16px; font-size: 12px; cursor: pointer; color: var(--text-muted); }
@@ -132,10 +135,16 @@
     .sel-btn-text { background: none; border: none; font-size: 12px; font-weight: 700; color: var(--text-muted); cursor: pointer; }
     .sel-btn-exit { background: var(--pill-bg); border: 1px solid var(--border); padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 700; cursor: pointer; color: var(--text); }
 
+    /* Interactive Bento Summary Widgets */
     .bento-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
-    .stat-card { border-radius: 16px; padding: 14px 16px; border-width: 2px; border-style: solid; min-height: 80px; display: flex; flex-direction: column; justify-content: space-between; }
+    .stat-card { border-radius: 16px; padding: 14px 16px; border-width: 2px; border-style: solid; min-height: 80px; display: flex; flex-direction: column; justify-content: space-between; cursor: pointer; transition: transform 0.1s ease, box-shadow 0.15s ease; }
+    .stat-card:active { transform: scale(0.97); }
+    
     .stat-card.out { background: var(--out-bg); border-color: var(--out-border); }
     .stat-card.low { background: var(--low-bg); border-color: var(--low-border); }
+    
+    .stat-card.active-filter-card { box-shadow: 0 0 0 3px var(--fab-bg); }
+
     .stat-label { font-size: 10px; font-weight: 800; letter-spacing: 0.6px; }
     .stat-card.out .stat-label { color: var(--out-badge); }
     .stat-card.low .stat-label { color: var(--low-badge); }
@@ -148,7 +157,7 @@
     .chip-manage { background: transparent; border-style: dashed; }
 
     .bento-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .bento-card { background: var(--card-bg); border-radius: 16px; padding: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; justify-content: space-between; min-height: 124px; transition: transform 0.1s ease, border-color 0.15s ease; position: relative; }
+    .bento-card { background: var(--card-bg); border-radius: 16px; padding: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; justify-content: space-between; min-height: 124px; transition: transform 0.1s ease, border-color 0.15s ease, opacity 0.2s ease; position: relative; }
     .bento-card.is-out { border: 2.5px solid var(--out-border) !important; }
     .bento-card.is-low { border: 2px solid var(--low-border) !important; }
     .bento-card.is-selected { border: 3px solid var(--out-border) !important; background: var(--card-selected-bg) !important; }
@@ -278,6 +287,7 @@
       </div>
       <div class="header-actions">
         <button class="action-btn" id="bellBtn" onclick="enableLockscreenAlerts()" title="Enable Lock Screen Alerts">🔔</button>
+        <button class="action-btn" id="headerCogBtn" onclick="toggleCategoryModal(true)" title="Manage Categories">⚙️</button>
         <button class="action-btn" id="binBtn" onclick="toggleSelectionMode()" title="Toggle Delete / Selection Mode">🗑️</button>
         <div class="theme-switch">
           <button class="theme-btn" id="btnLight" onclick="setTheme('light')">☀️</button>
@@ -295,12 +305,13 @@
       </div>
     </div>
 
+    <!-- Interactive Bento Summary Widgets -->
     <div class="bento-stats">
-      <div class="stat-card out">
+      <div class="stat-card out" id="statCardOut" onclick="toggleQuickFilter('out')">
         <div class="stat-label">OUT OF STOCK</div>
         <div class="stat-value" id="outCount">0 items</div>
       </div>
-      <div class="stat-card low">
+      <div class="stat-card low" id="statCardLow" onclick="toggleQuickFilter('low')">
         <div class="stat-label">LOW STOCK</div>
         <div class="stat-value" id="lowCount">0 items</div>
       </div>
@@ -390,7 +401,7 @@
       enableIndexedDbPersistence
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    const APP_VERSION = "3.4.0";
+    const APP_VERSION = "3.6.0";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAMznXG0OXHqMdfrmOGHK-g08TugsYfWw8",
@@ -439,6 +450,7 @@
     let items = [];
     let categories = defaultCategories;
     let currentFilter = "All";
+    let quickFilter = null; // Can be 'out', 'low', or null
     let selectionMode = false;
     let selectedIds = new Set();
     let selectedModalCategory = "";
@@ -463,6 +475,9 @@
       const bell = document.getElementById('bellBtn');
       if ('Notification' in window && Notification.permission === 'granted') {
         if (bell) bell.classList.add('hidden');
+        document.body.classList.add('notifications-active');
+      } else {
+        document.body.classList.remove('notifications-active');
       }
     }
 
@@ -809,6 +824,16 @@
 
     window.setFilter = function(cat) {
       currentFilter = cat;
+      quickFilter = null; // Clear quick filter when selecting a category tab
+      render();
+    };
+
+    window.toggleQuickFilter = function(type) {
+      if (quickFilter === type) {
+        quickFilter = null; // Toggle off if already active
+      } else {
+        quickFilter = type; // Set to 'out' or 'low'
+      }
       render();
     };
 
@@ -818,12 +843,18 @@
       const selBar = document.getElementById('selectionBar');
       const selCount = document.getElementById('selectionCount');
       const bulkDeleteBar = document.getElementById('bulkDeleteBar');
+      const statCardOut = document.getElementById('statCardOut');
+      const statCardLow = document.getElementById('statCardLow');
 
       const outCount = items.filter((i) => i.amount === 0).length;
       const lowCount = items.filter((i) => i.amount === 1).length;
       document.getElementById('outCount').innerText = `${outCount} items`;
       document.getElementById('lowCount').innerText = `${lowCount} items`;
       document.getElementById('summaryText').innerText = `${items.length} items total • ${outCount} empty • ${lowCount} low`;
+
+      // Highlight active summary card filter
+      statCardOut.classList.toggle('active-filter-card', quickFilter === 'out');
+      statCardLow.classList.toggle('active-filter-card', quickFilter === 'low');
 
       if (selectionMode) {
         selBar.classList.add('active');
@@ -836,10 +867,16 @@
       const allFilterCategories = ["All", ...categories];
       filterBar.innerHTML = allFilterCategories.map((cat) => {
         const count = cat === "All" ? items.length : items.filter((i) => i.category === cat).length;
-        return `<div class="chip ${currentFilter === cat ? 'active' : ''}" onclick="setFilter('${cat}')">${cat} (${count})</div>`;
-      }).join('') + `<div class="chip chip-manage" onclick="toggleCategoryModal(true)">⚙️ Categories</div>`;
+        return `<div class="chip ${currentFilter === cat && !quickFilter ? 'active' : ''}" onclick="setFilter('${cat}')">${cat} (${count})</div>`;
+      }).join('');
 
-      const filtered = items.filter((i) => currentFilter === "All" || i.category === currentFilter);
+      // Apply filtering logic
+      let filtered = items.filter((i) => currentFilter === "All" || i.category === currentFilter);
+      if (quickFilter === 'out') {
+        filtered = filtered.filter(i => i.amount === 0);
+      } else if (quickFilter === 'low') {
+        filtered = filtered.filter(i => i.amount === 1);
+      }
 
       grid.innerHTML = filtered.map((item) => {
         const isOut = item.amount === 0;
