@@ -390,7 +390,7 @@
       enableIndexedDbPersistence
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    const APP_VERSION = "3.3.0";
+    const APP_VERSION = "3.4.0";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAMznXG0OXHqMdfrmOGHK-g08TugsYfWw8",
@@ -466,7 +466,6 @@
       }
     }
 
-    // App-wide smart sanitizer to deduplicate / normalize category names
     function sanitizeCategoryName(rawInput) {
       if (!rawInput) return "General";
       const cleaned = rawInput.trim().replace(/\s+/g, ' ').toLowerCase();
@@ -479,7 +478,6 @@
       onSnapshot(metaDoc, (snap) => {
         let loadedCats = defaultCategories;
         if (snap.exists() && Array.isArray(snap.data().list)) {
-          // Clean up any existing duplicates in database array
           const uniqueSet = new Set();
           snap.data().list.forEach(c => {
             const norm = sanitizeCategoryName(c);
@@ -504,7 +502,6 @@
         const loaded = [];
         snapshot.forEach((d) => {
           const data = d.data();
-          // App-wide normalization: ensure item's category matches an existing clean category name
           const normalizedCat = sanitizeCategoryName(data.category);
           loaded.push({ id: d.id, ...data, category: normalizedCat });
         });
