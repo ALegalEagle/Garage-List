@@ -70,7 +70,6 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* Fluid container adapting to iPad and widescreen desktop */
     .container { 
       max-width: 1200px; 
       margin: 0 auto; 
@@ -137,7 +136,6 @@
     .sel-btn-text { background: none; border: none; font-size: 12px; font-weight: 700; color: var(--text-muted); cursor: pointer; }
     .sel-btn-exit { background: var(--pill-bg); border: 1px solid var(--border); padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 700; cursor: pointer; color: var(--text); }
 
-    /* Bento Stats Widget Bar */
     .bento-stats { 
       display: grid; 
       grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); 
@@ -162,7 +160,6 @@
     .chip { padding: 6px 14px; border-radius: 16px; font-size: 12px; font-weight: 700; border: 1px solid var(--border); background: var(--card-bg); color: var(--text-muted); cursor: pointer; white-space: nowrap; transition: background 0.15s ease, color 0.15s ease; }
     .chip.active { background: var(--fab-bg); color: var(--fab-text); border-color: var(--fab-bg); }
 
-    /* Responsive Auto-Fitting Bento Grid */
     .bento-grid { 
       display: grid; 
       grid-template-columns: repeat(auto-fill, minmax(175px, 1fr)); 
@@ -217,7 +214,6 @@
 
     body.selection-active .stepper-btn { pointer-events: none; opacity: 0.2; }
 
-    /* Fixed Actions */
     .fab-bottom {
       position: fixed;
       bottom: calc(env(safe-area-inset-bottom, 16px) + 20px);
@@ -263,7 +259,6 @@
     body.selection-active .fab-bottom { display: none !important; }
     body.selection-active .bulk-delete-bar { display: block; }
 
-    /* Responsive Modal Engine (Bottom sheet on phone, centered modal on iPad / Web) */
     .modal-overlay { 
       display: none; 
       position: fixed; 
@@ -475,7 +470,7 @@
       enableMultiTabIndexedDbPersistence
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    const APP_VERSION = "4.1.0";
+    const APP_VERSION = "4.2.0";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAMznXG0OXHqMdfrmOGHK-g08TugsYfWw8",
@@ -597,6 +592,11 @@
       return rawInput.trim().replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
     }
 
+    function sanitizeItemName(rawInput) {
+      if (!rawInput) return "";
+      return rawInput.trim().replace(/\s+/g, ' ').replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+    }
+
     function escapeAttr(str) {
       return (str || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
     }
@@ -616,22 +616,61 @@
         render();
       }, (err) => console.error("Categories snapshot error:", err));
 
-      onSnapshot(itemsCol, (snapshot) => {
+      onSnapshot(itemsCol, async (snapshot) => {
         if (snapshot.empty && !localStorage.getItem('garage_seeded_fb')) {
           seedDatabase();
           return;
         }
 
-        const loaded = [];
+        const map = new Map();
+        const duplicatesToDelete = [];
+        const updatesToApply = [];
+
         snapshot.forEach((d) => {
           const data = d.data();
-          loaded.push({ 
-            id: d.id, 
-            ...data, 
-            category: sanitizeCategoryName(data.category)
-          });
+          const rawName = (data.name || '').trim();
+          const normalizedKey = rawName.toLowerCase();
+          const sanitizedCat = sanitizeCategoryName(data.category);
+          const amount = Number(data.amount) || 0;
+
+          if (!map.has(normalizedKey)) {
+            map.set(normalizedKey, { 
+              id: d.id, 
+              name: sanitizeItemName(rawName),
+              amount: amount,
+              category: sanitizedCat,
+              updatedAt: data.updatedAt
+            });
+          } else {
+            // Found duplicate item: combine stock into primary card
+            const primary = map.get(normalizedKey);
+            primary.amount += amount;
+            duplicatesToDelete.push(d.id);
+            updatesToApply.push({ id: primary.id, amount: primary.amount, name: primary.name });
+          }
         });
 
+        // Permanently prune duplicate records from Firestore
+        if (duplicatesToDelete.length > 0) {
+          try {
+            const batch = writeBatch(db);
+            duplicatesToDelete.forEach((dupId) => {
+              batch.delete(doc(db, "garage_items", dupId));
+            });
+            updatesToApply.forEach((upd) => {
+              batch.update(doc(db, "garage_items", upd.id), {
+                amount: upd.amount,
+                name: upd.name,
+                updatedAt: serverTimestamp()
+              });
+            });
+            await batch.commit();
+          } catch (err) {
+            console.error("Auto-merge cleanup error:", err);
+          }
+        }
+
+        const loaded = Array.from(map.values());
         loaded.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
         loaded.forEach((newItem) => {
@@ -656,7 +695,7 @@
       defaultSeedItems.forEach((item) => {
         const newDoc = doc(itemsCol);
         batch.set(newDoc, {
-          name: item.name,
+          name: sanitizeItemName(item.name),
           amount: item.amount,
           category: sanitizeCategoryName(item.category),
           updatedAt: serverTimestamp()
@@ -724,7 +763,10 @@
     };
 
     window.addNewItem = async function() {
-      const name = dom.newItemName.value.trim();
+      const rawName = dom.newItemName.value.trim();
+      if (!rawName) return alert('Please enter an item name');
+
+      const name = sanitizeItemName(rawName);
       let category = selectedModalCategory;
       
       if (category === '__new__') {
@@ -739,15 +781,23 @@
         category = sanitizeCategoryName(category);
       }
 
-      if (!name) return alert('Please enter an item name');
       if (!category) return alert('Please select a category');
 
-      await addDoc(itemsCol, {
-        name,
-        category,
-        amount: modalInitialQty,
-        updatedAt: serverTimestamp()
-      }).catch(console.error);
+      // If item exists under any casing, increment rather than creating duplicate
+      const existing = items.find(i => i.name.trim().toLowerCase() === rawName.toLowerCase());
+      if (existing) {
+        await updateDoc(doc(db, "garage_items", existing.id), {
+          amount: increment(modalInitialQty),
+          updatedAt: serverTimestamp()
+        }).catch(console.error);
+      } else {
+        await addDoc(itemsCol, {
+          name,
+          category,
+          amount: modalInitialQty,
+          updatedAt: serverTimestamp()
+        }).catch(console.error);
+      }
 
       dom.newItemName.value = '';
       dom.inlineNewCategory.value = '';
@@ -970,7 +1020,6 @@
         dom.selBar.classList.remove('active');
       }
 
-      // Render Category Filter Chips
       const allFilterCategories = ["All", ...categories];
       dom.filterBar.innerHTML = allFilterCategories.map((cat) => {
         const count = cat === "All" ? items.length : items.filter((i) => i.category === cat).length;
@@ -985,7 +1034,6 @@
         filtered = filtered.filter(i => i.amount === 1);
       }
 
-      // Render Item Grid using DocumentFragment
       const fragment = document.createDocumentFragment();
       filtered.forEach((item) => {
         const isOut = item.amount === 0;
