@@ -12,7 +12,7 @@
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
 
-  <link rel="icon" type="image/png" sizes="192x192" href="https://img.icons8.com/fluency/192/shopping-cart.png" />
+  <link id="dynamicFavicon" rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='512' height='512' rx='120' fill='%230f172a'/%3E%3Crect x='76' y='76' width='360' height='360' rx='28' fill='none' stroke='%23334155' stroke-width='20'/%3E%3Cline x1='76' y1='264' x2='436' y2='264' stroke='%23475569' stroke-width='20'/%3E%3Cline x1='76' y1='358' x2='436' y2='358' stroke='%23475569' stroke-width='20'/%3E%3Crect x='130' y='296' width='46' height='62' rx='8' fill='%2338bdf8'/%3E%3Crect x='200' y='306' width='70' height='52' rx='8' fill='%2364748b'/%3E%3Crect x='294' y='286' width='98' height='72' rx='10' fill='%2394a3b8'/%3E%3Ccircle cx='340' cy='220' r='22' fill='%2310b981'/%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" sizes="180x180" href="https://img.icons8.com/fluency/192/shopping-cart.png" />
   <link rel="manifest" href='data:application/manifest+json,{"name":"Garage Stock","short_name":"GarageStock","start_url":".","display":"standalone","background_color":"#0f172a","theme_color":"#0f172a","icons":[{"src":"https://img.icons8.com/fluency/192/shopping-cart.png","sizes":"192x192","type":"image/png"},{"src":"https://img.icons8.com/fluency/512/shopping-cart.png","sizes":"512x512","type":"image/png"}]}' />
 
@@ -80,7 +80,20 @@
     }
 
     header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
-    .title-row { display: flex; align-items: center; gap: 8px; }
+    .title-row { display: flex; align-items: center; gap: 10px; }
+    
+    .brand-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.12);
+      flex-shrink: 0;
+    }
+    .brand-icon svg { width: 100%; height: 100%; border-radius: 9px; display: block; }
+
     .title-row h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; }
 
     .sync-pill {
@@ -338,6 +351,7 @@
   <div class="container">
     <header>
       <div class="title-row">
+        <div class="brand-icon" id="brandIcon"></div>
         <h1>Garage Stock</h1>
         <div class="sync-pill" id="syncStatus">
           <span class="sync-dot"></span>
@@ -470,7 +484,7 @@
       enableMultiTabIndexedDbPersistence
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    const APP_VERSION = "4.2.0";
+    const APP_VERSION = "4.3.0";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAMznXG0OXHqMdfrmOGHK-g08TugsYfWw8",
@@ -528,6 +542,8 @@
 
     const dom = {
       body: document.body,
+      brandIcon: document.getElementById('brandIcon'),
+      dynamicFavicon: document.getElementById('dynamicFavicon'),
       grid: document.getElementById('bentoGrid'),
       filterBar: document.getElementById('categoryFilters'),
       selBar: document.getElementById('selectionBar'),
@@ -560,18 +576,47 @@
       catDeleteDialogDesc: document.getElementById('catDeleteDialogDesc')
     };
 
+    // Roll-Up Shelves Vector Artwork: Dark & Light
+    const logoSVGs = {
+      dark: `<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+        <rect width="512" height="512" rx="120" fill="#0f172a"/>
+        <rect x="76" y="76" width="360" height="360" rx="28" fill="none" stroke="#334155" stroke-width="20"/>
+        <line x1="76" y1="264" x2="436" y2="264" stroke="#475569" stroke-width="20" stroke-linecap="round"/>
+        <line x1="76" y1="358" x2="436" y2="358" stroke="#475569" stroke-width="20" stroke-linecap="round"/>
+        <rect x="130" y="296" width="46" height="62" rx="8" fill="#38bdf8"/>
+        <rect x="200" y="306" width="70" height="52" rx="8" fill="#64748b"/>
+        <rect x="294" y="286" width="98" height="72" rx="10" fill="#94a3b8"/>
+        <circle cx="340" cy="220" r="22" fill="#10b981"/>
+      </svg>`,
+      light: `<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+        <rect width="512" height="512" rx="120" fill="#ffffff" stroke="#e2e8f0" stroke-width="20"/>
+        <rect x="76" y="76" width="360" height="360" rx="28" fill="none" stroke="#94a3b8" stroke-width="20"/>
+        <line x1="76" y1="264" x2="436" y2="264" stroke="#64748b" stroke-width="20" stroke-linecap="round"/>
+        <line x1="76" y1="358" x2="436" y2="358" stroke="#64748b" stroke-width="20" stroke-linecap="round"/>
+        <rect x="130" y="296" width="46" height="62" rx="8" fill="#0284c7"/>
+        <rect x="200" y="306" width="70" height="52" rx="8" fill="#94a3b8"/>
+        <rect x="294" y="286" width="98" height="72" rx="10" fill="#64748b"/>
+        <circle cx="340" cy="220" r="22" fill="#059669"/>
+      </svg>`
+    };
+
     window.setTheme = function(mode) {
       if (mode === 'dark') {
         dom.body.classList.add('dark');
         dom.btnDark.classList.add('active');
         dom.btnLight.classList.remove('active');
+        dom.brandIcon.innerHTML = logoSVGs.dark;
+        dom.dynamicFavicon.href = "data:image/svg+xml," + encodeURIComponent(logoSVGs.dark);
       } else {
         dom.body.classList.remove('dark');
         dom.btnLight.classList.add('active');
         dom.btnDark.classList.remove('active');
+        dom.brandIcon.innerHTML = logoSVGs.light;
+        dom.dynamicFavicon.href = "data:image/svg+xml," + encodeURIComponent(logoSVGs.light);
       }
       localStorage.setItem('garage_theme', mode);
     };
+
     const savedTheme = localStorage.getItem('garage_theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
     window.setTheme(savedTheme);
 
@@ -642,7 +687,6 @@
               updatedAt: data.updatedAt
             });
           } else {
-            // Found duplicate item: combine stock into primary card
             const primary = map.get(normalizedKey);
             primary.amount += amount;
             duplicatesToDelete.push(d.id);
@@ -650,7 +694,6 @@
           }
         });
 
-        // Permanently prune duplicate records from Firestore
         if (duplicatesToDelete.length > 0) {
           try {
             const batch = writeBatch(db);
@@ -783,7 +826,6 @@
 
       if (!category) return alert('Please select a category');
 
-      // If item exists under any casing, increment rather than creating duplicate
       const existing = items.find(i => i.name.trim().toLowerCase() === rawName.toLowerCase());
       if (existing) {
         await updateDoc(doc(db, "garage_items", existing.id), {
