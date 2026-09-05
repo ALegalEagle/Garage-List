@@ -70,18 +70,19 @@
       -webkit-font-smoothing: antialiased;
     }
 
+    /* Fluid container adapting to iPad and widescreen desktop */
     .container { 
-      max-width: 540px; 
+      max-width: 1200px; 
       margin: 0 auto; 
-      padding-top: calc(env(safe-area-inset-top, 20px) + 14px);
-      padding-left: 16px;
-      padding-right: 16px;
+      padding-top: calc(env(safe-area-inset-top, 20px) + 16px);
+      padding-left: clamp(16px, 4vw, 32px);
+      padding-right: clamp(16px, 4vw, 32px);
       padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 95px);
     }
 
     header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
     .title-row { display: flex; align-items: center; gap: 8px; }
-    .title-row h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+    .title-row h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; }
 
     .sync-pill {
       display: inline-flex;
@@ -127,16 +128,23 @@
     .theme-btn { border: none; background: transparent; padding: 4px 8px; border-radius: 16px; font-size: 12px; cursor: pointer; color: var(--text-muted); }
     .theme-btn.active { background: var(--card-bg); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 
-    .subtitle { font-size: 12px; color: var(--text-muted); margin-bottom: 14px; }
+    .subtitle { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; }
 
-    .selection-bar { display: none; justify-content: space-between; align-items: center; background: var(--card-bg); border: 1px solid var(--out-border); padding: 10px 14px; border-radius: 16px; margin-bottom: 14px; }
+    .selection-bar { display: none; justify-content: space-between; align-items: center; background: var(--card-bg); border: 1px solid var(--out-border); padding: 10px 14px; border-radius: 16px; margin-bottom: 16px; max-width: 600px; }
     .selection-bar.active { display: flex; }
     .sel-count { font-size: 13px; font-weight: 800; color: var(--out-border); }
     .sel-actions { display: flex; gap: 8px; align-items: center; }
     .sel-btn-text { background: none; border: none; font-size: 12px; font-weight: 700; color: var(--text-muted); cursor: pointer; }
     .sel-btn-exit { background: var(--pill-bg); border: 1px solid var(--border); padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 700; cursor: pointer; color: var(--text); }
 
-    .bento-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+    /* Bento Stats Widget Bar */
+    .bento-stats { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); 
+      max-width: 480px; 
+      gap: 12px; 
+      margin-bottom: 16px; 
+    }
     .stat-card { border-radius: 16px; padding: 14px 16px; border-width: 2px; border-style: solid; min-height: 80px; display: flex; flex-direction: column; justify-content: space-between; cursor: pointer; transition: transform 0.1s ease, box-shadow 0.15s ease; will-change: transform; }
     .stat-card:active { transform: scale(0.97); }
     
@@ -149,21 +157,28 @@
     .stat-card.low .stat-label { color: var(--low-badge); }
     .stat-value { font-size: 24px; font-weight: 800; line-height: 1; margin-top: 4px; }
 
-    .filters { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 14px; scrollbar-width: none; }
+    .filters { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 16px; scrollbar-width: none; }
     .filters::-webkit-scrollbar { display: none; }
     .chip { padding: 6px 14px; border-radius: 16px; font-size: 12px; font-weight: 700; border: 1px solid var(--border); background: var(--card-bg); color: var(--text-muted); cursor: pointer; white-space: nowrap; transition: background 0.15s ease, color 0.15s ease; }
     .chip.active { background: var(--fab-bg); color: var(--fab-text); border-color: var(--fab-bg); }
 
-    .bento-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; contain: content; }
+    /* Responsive Auto-Fitting Bento Grid */
+    .bento-grid { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fill, minmax(175px, 1fr)); 
+      gap: 12px; 
+      contain: content; 
+    }
+    
     .bento-card { 
       background: var(--card-bg); 
       border-radius: 16px; 
-      padding: 12px; 
+      padding: 14px; 
       border: 1px solid var(--border); 
       display: flex; 
       flex-direction: column; 
       justify-content: space-between; 
-      min-height: 124px; 
+      min-height: 130px; 
       position: relative; 
       animation: cardSlideIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
       will-change: transform, opacity;
@@ -202,10 +217,11 @@
 
     body.selection-active .stepper-btn { pointer-events: none; opacity: 0.2; }
 
+    /* Fixed Actions */
     .fab-bottom {
       position: fixed;
-      bottom: calc(env(safe-area-inset-bottom, 16px) + 16px);
-      right: 20px;
+      bottom: calc(env(safe-area-inset-bottom, 16px) + 20px);
+      right: clamp(20px, 4vw, 36px);
       width: 56px;
       height: 56px;
       background: var(--fab-bg);
@@ -220,16 +236,18 @@
       align-items: center;
       justify-content: center;
       z-index: 10;
+      transition: transform 0.15s ease;
     }
+    .fab-bottom:active { transform: scale(0.95); }
 
     .bulk-delete-bar { 
       display: none; 
       position: fixed; 
-      bottom: calc(env(safe-area-inset-bottom, 16px) + 16px); 
+      bottom: calc(env(safe-area-inset-bottom, 16px) + 20px); 
       left: 50%; 
       transform: translateX(-50%); 
       width: calc(100% - 32px); 
-      max-width: 508px; 
+      max-width: 440px; 
       background: var(--out-border); 
       color: #fff; 
       border: none; 
@@ -245,7 +263,16 @@
     body.selection-active .fab-bottom { display: none !important; }
     body.selection-active .bulk-delete-bar { display: block; }
 
-    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 99; align-items: flex-end; justify-content: center; }
+    /* Responsive Modal Engine (Bottom sheet on phone, centered modal on iPad / Web) */
+    .modal-overlay { 
+      display: none; 
+      position: fixed; 
+      inset: 0; 
+      background: rgba(0,0,0,0.6); 
+      z-index: 99; 
+      align-items: flex-end; 
+      justify-content: center; 
+    }
     .modal-overlay.open { display: flex; }
     
     .modal { 
@@ -260,6 +287,20 @@
       animation: slideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1);
     }
     @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+    @media (min-width: 640px) {
+      .modal-overlay { align-items: center; padding: 20px; }
+      .modal {
+        border-radius: 24px;
+        padding: 26px;
+        max-height: 80vh;
+        animation: modalScaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      @keyframes modalScaleIn {
+        from { opacity: 0; transform: scale(0.96); }
+        to { opacity: 1; transform: scale(1); }
+      }
+    }
 
     .modal-top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
     .modal-cancel-btn { background: none; border: none; font-size: 15px; font-weight: 700; color: var(--text-muted); cursor: pointer; }
@@ -328,7 +369,7 @@
       </div>
     </div>
 
-    <!-- Interactive Bento Summary Widgets -->
+    <!-- Summary Widgets -->
     <div class="bento-stats">
       <div class="stat-card out" id="statCardOut" onclick="toggleQuickFilter('out')">
         <div class="stat-label">OUT OF STOCK</div>
@@ -434,7 +475,7 @@
       enableMultiTabIndexedDbPersistence
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    const APP_VERSION = "4.0.0";
+    const APP_VERSION = "4.1.0";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAMznXG0OXHqMdfrmOGHK-g08TugsYfWw8",
@@ -448,7 +489,6 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Multi-tab safe indexedDb offline caching
     enableMultiTabIndexedDbPersistence(db).catch((err) => {
       console.warn("Persistence notice:", err.code);
     });
@@ -481,7 +521,6 @@
 
     const defaultCategories = ["Cereal", "Gluten Free Cereal", "Cleaning", "Household", "Condiments", "Spreads", "Kitchenware"];
 
-    // App State
     let items = [];
     let categories = defaultCategories;
     let currentFilter = "All";
@@ -492,7 +531,6 @@
     let modalInitialQty = 1;
     let pendingDeleteCategory = null;
 
-    // Cache DOM Elements to eliminate querySelector thrashing
     const dom = {
       body: document.body,
       grid: document.getElementById('bentoGrid'),
@@ -564,7 +602,6 @@
     }
 
     function initRealtimeDatabase() {
-      // 1. Sync Categories Metadata
       onSnapshot(metaDoc, (snap) => {
         if (snap.exists() && Array.isArray(snap.data().list)) {
           const uniqueSet = new Set();
@@ -579,7 +616,6 @@
         render();
       }, (err) => console.error("Categories snapshot error:", err));
 
-      // 2. Sync Inventory
       onSnapshot(itemsCol, (snapshot) => {
         if (snapshot.empty && !localStorage.getItem('garage_seeded_fb')) {
           seedDatabase();
@@ -598,7 +634,6 @@
 
         loaded.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
-        // Notification trigger on depletion
         loaded.forEach((newItem) => {
           const oldItem = items.find((i) => i.id === newItem.id);
           if (oldItem && oldItem.amount > 0 && newItem.amount === 0) {
@@ -650,7 +685,6 @@
       const item = items.find((i) => i.id === id);
       if (!item || (item.amount <= 0 && delta < 0)) return;
 
-      // Optimistic visual update
       item.amount += delta;
       render();
 
@@ -660,7 +694,7 @@
         updatedAt: serverTimestamp()
       }).catch((err) => {
         console.error("Update failed:", err);
-        item.amount -= delta; // Rollback on drop
+        item.amount -= delta;
         render();
       });
     };
@@ -936,7 +970,7 @@
         dom.selBar.classList.remove('active');
       }
 
-      // Render Categories
+      // Render Category Filter Chips
       const allFilterCategories = ["All", ...categories];
       dom.filterBar.innerHTML = allFilterCategories.map((cat) => {
         const count = cat === "All" ? items.length : items.filter((i) => i.category === cat).length;
@@ -944,7 +978,6 @@
         return `<div class="chip ${currentFilter === cat && !quickFilter ? 'active' : ''}" onclick="setFilter('${esc}')">${cat} (${count})</div>`;
       }).join('');
 
-      // Filter Evaluation
       let filtered = items.filter((i) => currentFilter === "All" || i.category === currentFilter);
       if (quickFilter === 'out') {
         filtered = filtered.filter(i => i.amount === 0);
@@ -952,7 +985,7 @@
         filtered = filtered.filter(i => i.amount === 1);
       }
 
-      // Render Item Grid with Fragment buffer to prevent intermediate redraws
+      // Render Item Grid using DocumentFragment
       const fragment = document.createDocumentFragment();
       filtered.forEach((item) => {
         const isOut = item.amount === 0;
@@ -988,7 +1021,6 @@
       dom.grid.appendChild(fragment);
     }
 
-    // Startup & Version Handshake
     window.addEventListener('load', () => {
       if (localStorage.getItem('app_version') !== APP_VERSION) {
         localStorage.setItem('app_version', APP_VERSION);
