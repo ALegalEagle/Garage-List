@@ -5,16 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="apple-mobile-web-app-title" content="Garage Stock" />
-  <title>Garage Stock</title>
+  <meta name="apple-mobile-web-app-title" content="Garage List" />
+  <title>Garage List</title>
 
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
 
+  <link id="dynamicFavicon" rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='512' height='512' rx='120' fill='%230f172a'/%3E%3Crect x='76' y='76' width='360' height='360' rx='28' fill='none' stroke='%23334155' stroke-width='20'/%3E%3Cline x1='76' y1='264' x2='436' y2='264' stroke='%23475569' stroke-width='20'/%3E%3Cline x1='76' y1='358' x2='436' y2='358' stroke='%23475569' stroke-width='20'/%3E%3Crect x='130' y='296' width='46' height='62' rx='8' fill='%2338bdf8'/%3E%3Crect x='200' y='306' width='70' height='52' rx='8' fill='%2364748b'/%3E%3Crect x='294' y='286' width='98' height='72' rx='10' fill='%2394a3b8'/%3E%3Ccircle cx='340' cy='220' r='22' fill='%2310b981'/%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
-  <link rel="manifest" href='data:application/manifest+json,{"name":"Garage Stock","short_name":"GarageStock","start_url":".","display":"standalone","background_color":"#0f172a","theme_color":"#0f172a","icons":[{"src":"apple-touch-icon.png","sizes":"180x180","type":"image/png"}]}' />
-  <link rel="manifest" href='data:application/manifest+json,{"name":"Garage Stock","short_name":"GarageStock","start_url":".","display":"standalone","background_color":"#0f172a","theme_color":"#0f172a","icons":[{"src":"https://img.icons8.com/fluency/192/shopping-cart.png","sizes":"192x192","type":"image/png"},{"src":"https://img.icons8.com/fluency/512/shopping-cart.png","sizes":"512x512","type":"image/png"}]}' />
+  <link rel="manifest" href='data:application/manifest+json,{"name":"Garage List","short_name":"GarageList","start_url":".","display":"standalone","background_color":"#0f172a","theme_color":"#0f172a","icons":[{"src":"apple-touch-icon.png","sizes":"180x180","type":"image/png"}]}' />
 
   <style>
     :root {
@@ -352,7 +352,7 @@
     <header>
       <div class="title-row">
         <div class="brand-icon" id="brandIcon"></div>
-        <h1>Garage Stock</h1>
+        <h1>Garage List</h1>
         <div class="sync-pill" id="syncStatus">
           <span class="sync-dot"></span>
           <span id="syncText">Connecting...</span>
@@ -480,11 +480,10 @@
       updateDoc, 
       writeBatch, 
       increment, 
-      serverTimestamp,
-      enableMultiTabIndexedDbPersistence
+      serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    const APP_VERSION = "4.3.0";
+    const APP_VERSION = "4.5.0";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAMznXG0OXHqMdfrmOGHK-g08TugsYfWw8",
@@ -497,10 +496,6 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-
-    enableMultiTabIndexedDbPersistence(db).catch((err) => {
-      console.warn("Persistence notice:", err.code);
-    });
 
     const itemsCol = collection(db, "garage_items");
     const metaDoc = doc(db, "garage_meta", "categories");
@@ -543,7 +538,6 @@
     const dom = {
       body: document.body,
       brandIcon: document.getElementById('brandIcon'),
-      dynamicFavicon: document.getElementById('dynamicFavicon'),
       grid: document.getElementById('bentoGrid'),
       filterBar: document.getElementById('categoryFilters'),
       selBar: document.getElementById('selectionBar'),
@@ -576,7 +570,6 @@
       catDeleteDialogDesc: document.getElementById('catDeleteDialogDesc')
     };
 
-    // Roll-Up Shelves Vector Artwork: Dark & Light
     const logoSVGs = {
       dark: `<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
         <rect width="512" height="512" rx="120" fill="#0f172a"/>
@@ -601,18 +594,19 @@
     };
 
     window.setTheme = function(mode) {
+      const fav = document.getElementById('dynamicFavicon');
       if (mode === 'dark') {
         dom.body.classList.add('dark');
-        dom.btnDark.classList.add('active');
-        dom.btnLight.classList.remove('active');
-        dom.brandIcon.innerHTML = logoSVGs.dark;
-        dom.dynamicFavicon.href = "data:image/svg+xml," + encodeURIComponent(logoSVGs.dark);
+        dom.btnDark?.classList.add('active');
+        dom.btnLight?.classList.remove('active');
+        if (dom.brandIcon) dom.brandIcon.innerHTML = logoSVGs.dark;
+        if (fav) fav.href = "data:image/svg+xml," + encodeURIComponent(logoSVGs.dark);
       } else {
         dom.body.classList.remove('dark');
-        dom.btnLight.classList.add('active');
-        dom.btnDark.classList.remove('active');
-        dom.brandIcon.innerHTML = logoSVGs.light;
-        dom.dynamicFavicon.href = "data:image/svg+xml," + encodeURIComponent(logoSVGs.light);
+        dom.btnLight?.classList.add('active');
+        dom.btnDark?.classList.remove('active');
+        if (dom.brandIcon) dom.brandIcon.innerHTML = logoSVGs.light;
+        if (fav) fav.href = "data:image/svg+xml," + encodeURIComponent(logoSVGs.light);
       }
       localStorage.setItem('garage_theme', mode);
     };
@@ -622,10 +616,10 @@
 
     function updateBellVisibility() {
       if ('Notification' in window && Notification.permission === 'granted') {
-        dom.bellBtn.classList.add('hidden');
-        dom.body.classList.add('notifications-active');
+        dom.bellBtn?.classList.add('hidden');
+        dom.body?.classList.add('notifications-active');
       } else {
-        dom.body.classList.remove('notifications-active');
+        dom.body?.classList.remove('notifications-active');
       }
     }
 
@@ -659,7 +653,11 @@
           setDoc(metaDoc, { list: defaultCategories }).catch(console.error);
         }
         render();
-      }, (err) => console.error("Categories snapshot error:", err));
+      }, (err) => {
+        console.error("Categories error:", err);
+        if (dom.summaryText) dom.summaryText.innerText = "Error: " + (err.message || err.code);
+        updateSyncStatus(false);
+      });
 
       onSnapshot(itemsCol, async (snapshot) => {
         if (snapshot.empty && !localStorage.getItem('garage_seeded_fb')) {
@@ -727,7 +725,8 @@
         render();
         updateSyncStatus(true);
       }, (err) => {
-        console.error("Inventory snapshot error:", err);
+        console.error("Inventory error:", err);
+        if (dom.summaryText) dom.summaryText.innerText = "Error: " + (err.message || err.code);
         updateSyncStatus(false);
       });
     }
@@ -749,11 +748,11 @@
 
     function updateSyncStatus(isLive) {
       if (isLive && navigator.onLine) {
-        dom.syncStatus.classList.remove('offline');
-        dom.syncText.innerText = "Live";
+        dom.syncStatus?.classList.remove('offline');
+        if (dom.syncText) dom.syncText.innerText = "Live";
       } else {
-        dom.syncStatus.classList.add('offline');
-        dom.syncText.innerText = "Offline";
+        dom.syncStatus?.classList.add('offline');
+        if (dom.syncText) dom.syncText.innerText = "Offline";
       }
     }
 
@@ -1025,10 +1024,10 @@
 
     function showLocalNotification(itemName) {
       if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification(itemName === "Garage Alerts Enabled" ? "Garage Stock Active" : "Out of Stock ⚠️", {
+        new Notification(itemName === "Garage Alerts Enabled" ? "Garage List Active" : "Out of Stock ⚠️", {
           body: itemName === "Garage Alerts Enabled" ? "You will receive alerts here when items run out." : `${itemName} has run out in the garage!`,
-          icon: "https://img.icons8.com/fluency/96/empty-box.png",
-          badge: "https://img.icons8.com/fluency/96/empty-box.png"
+          icon: "apple-touch-icon.png",
+          badge: "apple-touch-icon.png"
         });
       }
     }
@@ -1047,27 +1046,29 @@
     function render() {
       const outCount = items.filter((i) => i.amount === 0).length;
       const lowCount = items.filter((i) => i.amount === 1).length;
-      dom.outCount.innerText = `${outCount} items`;
-      dom.lowCount.innerText = `${lowCount} items`;
-      dom.summaryText.innerText = `${items.length} items total • ${outCount} empty • ${lowCount} low`;
+      if (dom.outCount) dom.outCount.innerText = `${outCount} items`;
+      if (dom.lowCount) dom.lowCount.innerText = `${lowCount} items`;
+      if (dom.summaryText) dom.summaryText.innerText = `${items.length} items total • ${outCount} empty • ${lowCount} low`;
 
-      dom.statCardOut.classList.toggle('active-filter-card', quickFilter === 'out');
-      dom.statCardLow.classList.toggle('active-filter-card', quickFilter === 'low');
+      dom.statCardOut?.classList.toggle('active-filter-card', quickFilter === 'out');
+      dom.statCardLow?.classList.toggle('active-filter-card', quickFilter === 'low');
 
       if (selectionMode) {
-        dom.selBar.classList.add('active');
-        dom.selCount.innerText = `✓ ${selectedIds.size} Selected`;
-        dom.bulkDeleteBar.innerText = `🗑️ Delete ${selectedIds.size} Selected Items`;
+        dom.selBar?.classList.add('active');
+        if (dom.selCount) dom.selCount.innerText = `✓ ${selectedIds.size} Selected`;
+        if (dom.bulkDeleteBar) dom.bulkDeleteBar.innerText = `🗑️ Delete ${selectedIds.size} Selected Items`;
       } else {
-        dom.selBar.classList.remove('active');
+        dom.selBar?.classList.remove('active');
       }
 
       const allFilterCategories = ["All", ...categories];
-      dom.filterBar.innerHTML = allFilterCategories.map((cat) => {
-        const count = cat === "All" ? items.length : items.filter((i) => i.category === cat).length;
-        const esc = escapeAttr(cat);
-        return `<div class="chip ${currentFilter === cat && !quickFilter ? 'active' : ''}" onclick="setFilter('${esc}')">${cat} (${count})</div>`;
-      }).join('');
+      if (dom.filterBar) {
+        dom.filterBar.innerHTML = allFilterCategories.map((cat) => {
+          const count = cat === "All" ? items.length : items.filter((i) => i.category === cat).length;
+          const esc = escapeAttr(cat);
+          return `<div class="chip ${currentFilter === cat && !quickFilter ? 'active' : ''}" onclick="setFilter('${esc}')">${cat} (${count})</div>`;
+        }).join('');
+      }
 
       let filtered = items.filter((i) => currentFilter === "All" || i.category === currentFilter);
       if (quickFilter === 'out') {
@@ -1107,8 +1108,10 @@
         fragment.appendChild(card);
       });
 
-      dom.grid.innerHTML = '';
-      dom.grid.appendChild(fragment);
+      if (dom.grid) {
+        dom.grid.innerHTML = '';
+        dom.grid.appendChild(fragment);
+      }
     }
 
     window.addEventListener('load', () => {
